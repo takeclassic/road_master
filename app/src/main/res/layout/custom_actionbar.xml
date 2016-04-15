@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="107dp"
+    android:background="@drawable/actionbar"
+    android:padding="10dp">
+    
+    <ImageView
+        android:id="@+id/actionbar_icon"
+        android:src="@drawable/icon_noback"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_centerVertical="true"/>
+    
+    <EditText
+        android:id="@+id/actionbar_depart"
+        android:layout_width="match_parent"
+        android:layout_height="35dp"
+        android:layout_toRightOf="@id/actionbar_icon"
+        android:background="@drawable/leftround"
+        android:layout_marginLeft="10dp"
+        android:paddingLeft="10dp"
+        android:hint="출발지를 입력하세요"/>
+
+    <ImageButton
+        android:id="@+id/actionbar_depart_search"
+        android:src="@drawable/search"
+        android:background="@drawable/rightround"
+        android:scaleType="centerInside"
+        android:padding="7dp"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        android:layout_alignParentRight="true"/>
+
+    <EditText
+        android:id="@+id/actionbar_dest"
+        android:layout_width="match_parent"
+        android:layout_height="35dp"
+        android:layout_toRightOf="@id/actionbar_icon"
+        android:layout_below="@id/actionbar_depart"
+        android:background="@drawable/leftround"
+        android:layout_marginTop="10dp"
+        android:layout_marginLeft="10dp"
+        android:paddingLeft="10dp"
+        android:hint="도착지를 입력하세요"
+        android:layout_marginBottom="7dp"/>
+
+
+    <ImageButton
+        android:id="@+id/actionbar_dest_search"
+        android:src="@drawable/search"
+        android:background="@drawable/rightround"
+        android:scaleType="centerInside"
+        android:padding="7dp"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/actionbar_depart_search"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="7dp"/>
+
+</RelativeLayout>
