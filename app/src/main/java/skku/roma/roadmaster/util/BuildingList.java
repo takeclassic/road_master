@@ -30,7 +30,8 @@ public class BuildingList {
     public void setFontSize(int fontSize){
         this.fontSize = fontSize;
     }
-
+	
+	@Deprecated
     public void setVisible(float minx, float maxx, float miny, float maxy, float MapScale){
         for(Building building : buildings) {
             if (minx < building.x && building.x < maxx && miny < building.y && building.y < maxy) {
