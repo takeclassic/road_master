@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
+import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.util.Log;
 
@@ -121,6 +122,23 @@ public class MapView extends SubsamplingScaleImageView {
 
             canvas.drawPath(line, paint);
         }
+
+
+        //TODO 글자 추적되는 기능 테스트버전. 엔터처리, buildingList 객체 참조하기 구현해야합니다. 가능하다면 좌표기준설정과 정렬기능또한.
+        Paint textPaint = new TextPaint();
+        final int textSize = 40;
+        textPaint.setTextSize(textSize);
+        textPaint.setAntiAlias(true);
+        textPaint.setColor(Color.DKGRAY);
+
+        PointF textPoint = sourceToViewCoord(1634, 1819);
+        canvas.drawText("성균관대학교", textPoint.x, textPoint.y, textPaint);
+        canvas.drawText("자연과학캠퍼스", textPoint.x, textPoint.y+textSize, textPaint);
+        textPoint = sourceToViewCoord(2487, 991);
+        canvas.drawText("제2공학관", textPoint.x, textPoint.y, textPaint);
+
+		
+
 /*
         if(start != null && pin != null){
             PointF startPin = sourceToViewCoord(start);

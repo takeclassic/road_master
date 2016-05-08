@@ -94,7 +94,7 @@ public class MainActivity extends ActionBarActivity {
                     if (MapScale != Map.getScale()) {
                         MapScale = Map.getScale();
                     }
-                    updateView();
+                    //updateView();
                 }
 
                 return gestureDetector.onTouchEvent(motionEvent);
@@ -113,7 +113,7 @@ public class MainActivity extends ActionBarActivity {
 
             @Override
             public void onImageLoaded() {
-                updateView();
+                //updateView();
                 loading.setVisibility(View.GONE);
             }
 
@@ -212,6 +212,7 @@ public class MainActivity extends ActionBarActivity {
         Map.setPath(path);
     }
 
+	@Deprecated
     private void updateView(){
         float centerx = Map.getCenter().x;
         float centery = Map.getCenter().y;
@@ -238,7 +239,7 @@ public class MainActivity extends ActionBarActivity {
         SubsamplingScaleImageView.AnimationBuilder animationBuilder = Map.animateScale(newscale);
         animationBuilder.withDuration(500).start();
         MapScale = newscale;
-        updateView();
+        //updateView();
     }
 /*
     @Override
