@@ -12,7 +12,7 @@ public class MapNode {
     public int y;
     int primary;
     String name;
-    ArrayList<Integer> classlist;
+    ArrayList<Classroom> classlist;
     ArrayList<MapEdge> edgelist;
 
     public MapNode(int x, int y, int primary, String name) {
@@ -20,8 +20,12 @@ public class MapNode {
         this.y = y;
         this.primary = primary;
         this.name = name;
-        classlist = new ArrayList<Integer>();
+        classlist = new ArrayList<Classroom>();
         edgelist = new ArrayList<MapEdge>();
+    }
+
+    public void addEdge(MapNode other){
+        edgelist.add(new MapEdge(other, this));
     }
 
     public void addEdge(MapNode other, float weight){
@@ -32,7 +36,4 @@ public class MapNode {
         Collections.sort(edgelist, compare);
     }
 
-    public void addClass(int classnum){
-        classlist.add(classnum);
-    }
 }

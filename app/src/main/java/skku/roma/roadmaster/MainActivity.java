@@ -1,9 +1,17 @@
 package skku.roma.roadmaster;
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.PointF;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -25,9 +33,14 @@ import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.ListIterator;
+import java.util.Timer;
+import java.util.TimerTask;
 
+import skku.roma.roadmaster.util.Building;
 import skku.roma.roadmaster.util.BuildingList;
+import skku.roma.roadmaster.util.DB;
 import skku.roma.roadmaster.util.MapGraph;
 import skku.roma.roadmaster.util.MapNode;
 import skku.roma.roadmaster.util.MapView;
@@ -51,25 +64,44 @@ public class MainActivity extends ActionBarActivity {
     private float MapScale;
     private int MapWidth;
     private int MapHeight;
-    BuildingList buildings;
+    ArrayList<Building> buildings;
     MapGraph Graph;
 
     ImageButton PlusButton;
     ImageButton MinusButton;
 
+    //GPS
+    LocationManager locationManager;
+    boolean locationSuccess;
+    private static final double latitudeBase = 37.297452;
+    private static final double longitudeBase = 126.969801;
+    Handler handler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            if(!locationSuccess){
+                Toast.makeText(getApplicationContext(), "위치 정보 수신에 실패했습니다.", Toast.LENGTH_SHORT).show();
+            }
+        };
+    };
+    double currentx;
+    double currenty;
+
+    //Database
+    DB db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        startActivity(new Intent(this, SplashActivity.class));
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        db = new DB(this);
+
         loading = (ProgressBar) findViewById(R.id.loading);
         MapLayout = (RelativeLayout) findViewById(R.id.maplayout);
         PlusButton = (ImageButton) findViewById(R.id.plusbutton);
         MinusButton = (ImageButton) findViewById(R.id.minusbutton);
 
-        buildings = new BuildingList(MainActivity.this, MapLayout);
         Graph = new MapGraph();
 
         Map = (MapView) findViewById(R.id.view_map);
@@ -133,6 +165,11 @@ public class MainActivity extends ActionBarActivity {
             }
         });
 
+        buildings = db.getBuildings();
+        Map.setBuildings(buildings);
+
+        startActivity(new Intent(this, SplashActivity.class)); // Map을 로드하고 로딩 액티비티 실행
+
         actionBar = getSupportActionBar();
         actionBar.setDisplayShowHomeEnabled(false);
         actionBar.setDisplayShowTitleEnabled(false);
@@ -191,19 +228,72 @@ public class MainActivity extends ActionBarActivity {
     }
 
     public void onGpsClick(View view) {
-        //TODO GPS 구현
+        locationSuccess = false;
+
+        if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+            pleaseTurnOnGps();
+            return;
+        }
+
+        final LocationListener locationListener = new LocationListener() {
+            @Override
+            public void onStatusChanged(String provider, int status, Bundle extras) {}
+
+            @Override
+            public void onProviderEnabled(String provider) {}
+
+            @Override
+            public void onProviderDisabled(String provider) {}
+
+            @Override
+            public void onLocationChanged(Location location) {
+				if(location.getProvider().equals(LocationManager.NETWORK_PROVIDER)){
+					Log.d("ROMA", "위치를 네트워크로 구했습니다");
+				}
+
+                locationSuccess = true;
+                setPin(location.getLatitude(), location.getLongitude());
+                locationManager.removeUpdates(this);
+            }
+        };
+
+        Location lastLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+
+        if(lastLocation != null && lastLocation.getTime() > Calendar.getInstance().getTimeInMillis() - 30000){ // 30초가 안 지났으면
+            setPin(lastLocation.getLatitude(), lastLocation.getLongitude());
+        }
+
+        lastLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+
+        if(lastLocation != null && lastLocation.getTime() > Calendar.getInstance().getTimeInMillis() - 30000){
+            setPin(lastLocation.getLatitude(), lastLocation.getLongitude());
+        }
+        else{
+            Toast.makeText(this, "위치 정보 수신에 시도합니다.", Toast.LENGTH_SHORT).show();
+            Timer timer = new Timer();
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    locationManager.removeUpdates(locationListener);
+                    handler.sendEmptyMessage(0);
+                }
+            }, 20000);
+        }
     }
 
     public void onPlusClick(View view) {
-        zoom(0.2f);
+        zoom(0.3f);
     }
 
     public void onMinusClick(View view) {
-        zoom(-0.2f);
+        zoom(-0.3f);
     }
 
     public void onSearchClick(View view) {
         //TODO 검색 기능 구현
+        Map.setTest(Graph); // TEST
     }
 
     public void onFindWayClick(View view) {
@@ -212,6 +302,7 @@ public class MainActivity extends ActionBarActivity {
         Map.setPath(path);
     }
 
+    /*
 	@Deprecated
     private void updateView(){
         float centerx = Map.getCenter().x;
@@ -226,6 +317,7 @@ public class MainActivity extends ActionBarActivity {
 
         buildings.setVisible(minx, maxx, miny, maxy, MapScale);
     }
+    */
 
     private void zoom(float scale){
         float newscale = Map.getScale() + scale;
@@ -240,6 +332,33 @@ public class MainActivity extends ActionBarActivity {
         animationBuilder.withDuration(500).start();
         MapScale = newscale;
         //updateView();
+    }
+
+    private void pleaseTurnOnGps() {
+        AlertDialog.Builder gsDialog = new AlertDialog.Builder(this);
+        gsDialog.setTitle("현재 위치 서비스");
+        gsDialog.setMessage("위치 서비스를 실행해주세요.");
+        gsDialog.setPositiveButton("실행",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        Intent intent = new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                        intent.addCategory(Intent.CATEGORY_DEFAULT);
+                        startActivity(intent);
+                    }
+                })
+                .setNegativeButton("취소",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                            }
+                        }).create().show();
+    }
+
+    private void setPin(double latitude, double longitude){
+        Log.d("ROMA", "latitude : " +latitude+ ", longitude : " +longitude);
+        currentx = (longitude - longitudeBase) * 1000000d / 2.8185;
+        currenty = (latitudeBase - latitude) * 1000000d / 2.2529;
+
+        Map.setPin(new PointF((float) currentx, (float) currenty));
     }
 /*
     @Override

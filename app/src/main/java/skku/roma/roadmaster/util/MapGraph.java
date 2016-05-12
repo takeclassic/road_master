@@ -14,16 +14,66 @@ public class MapGraph {
     public MapGraph() {
         Graph = new HashMap<Integer, MapNode>();
 
-        addNode(727, 468, 1, "신관 A동 정문");
+        addNode(734, 490, 1, "신관 A동 정문 앞");
         addNode(692, 520, 2, "신관 A동 앞");
-        addEdge(1, 2, 1f);
-        addNode(1029, 562, 3, "신관 B동 정문");
-        addEdge(2, 3, 2f);
+        addEdge(1, 2);
+        addNode(893, 486, 3, "신관 B동 후문 앞");
+        addEdge(1, 3);
+        addNode(890, 559, 4, "신관 B동 앞");
+        addEdge(2, 4);
+        addEdge(3, 4);
+        addNode(1037, 585, 5, "신관 B동 정문 앞");
+        addEdge(4, 5);
+        addNode(1321, 532, 6, "샛길 앞");
+        addEdge(5, 6);
+        addNode(1254, 656, 7, "샛길 중간");
+        addEdge(6, 7);
+        addNode(1386, 676, 8, "샛길");
+        addEdge(7, 8);
+        addNode(1535, 581, 9, "생명공학관 입구");
+        addEdge(8, 9);
+        addNode(1483, 504, 10, "생명공학관 앞");
+        addEdge(6, 10);
+        addEdge(9, 10);
+        addNode(1537, 296, 11, "밍기뉴 앞");
+        addEdge(10, 11);
+        addNode(1700, 321, 12, "의관 앞");
+        addEdge(11, 12);
+        addNode(1790, 438, 13, "의관 앞 갈림길");
+        addEdge(12, 13);
+        addNode(1644, 469, 14, "의관 앞 갈림길");
+        addEdge(9, 14);
+        addEdge(10, 14);
+        addEdge(13, 14);
+        addNode(1867, 441, 15, "예관 앞 갈림길");
+        addEdge(13, 15);
+        addNode(1855, 527, 16, "생명공학관 앞 갈림길");
+        addEdge(14, 16);
+        addEdge(15, 16);
+        addNode(1899, 653, 17, "생명공학대학 앞 갈림길");
+        addEdge(16, 17);
+        addNode(1672, 638, 18, "생명공학대학 앞 샛길");
+        addEdge(17, 18);
+        addNode(1606, 682, 19, "생명공학관 앞");
+        addEdge(9, 19);
+        addEdge(18, 19);
+        addNode(1556, 733, 20, "생명공학관 앞");
+        addEdge(19, 20);
+
+
         sortNode();
     }
 
     public void addNode(int x, int y, int primary, String name) {
         Graph.put(primary, new MapNode(x, y, primary, name));
+    }
+
+    public void addEdge(int a, int b){
+        MapNode node1 = Graph.get(a);
+        MapNode node2 = Graph.get(b);
+
+        node1.addEdge(node2);
+        node2.addEdge(node1);
     }
 
     public void addEdge(int a, int b, float weight){
@@ -71,5 +121,4 @@ public class MapGraph {
 
         return node;
     }
-
 }
