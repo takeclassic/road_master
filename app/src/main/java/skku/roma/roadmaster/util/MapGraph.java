@@ -24,11 +24,11 @@ public class MapGraph {
         addEdge(3, 4);
         addNode(1037, 585, 5, "신관 B동 정문 앞");
         addEdge(4, 5);
-        addNode(1321, 532, 6, "샛길 앞");
+        addNode(1321, 532, 6, "생명공학관 근처 샛길 앞");
         addEdge(5, 6);
-        addNode(1254, 656, 7, "샛길 중간");
+        addNode(1254, 656, 7, "생명공학관 근처 샛길 중간");
         addEdge(6, 7);
-        addNode(1386, 676, 8, "샛길");
+        addNode(1386, 676, 8, "생명공학관 근처 샛길");
         addEdge(7, 8);
         addNode(1535, 581, 9, "생명공학관 입구");
         addEdge(8, 9);
@@ -59,7 +59,6 @@ public class MapGraph {
         addEdge(18, 19);
         addNode(1556, 733, 20, "생명공학관 앞");
         addEdge(19, 20);
-
 
         sortNode();
     }

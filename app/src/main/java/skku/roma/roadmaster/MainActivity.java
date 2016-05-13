@@ -16,17 +16,22 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.GestureDetector;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.davemorrissey.labs.subscaleview.ImageSource;
@@ -59,6 +64,9 @@ public class MainActivity extends ActionBarActivity {
     EditText destText;
     ImageButton departSearch;
     ImageButton destSearch;
+    ImageButton departDelete;
+    ImageButton destDelete;
+    InputMethodManager inputMethodManager;
 
     MapView Map;
     private float MapScale;
@@ -96,6 +104,8 @@ public class MainActivity extends ActionBarActivity {
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         db = new DB(this);
+
+        inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
 
         loading = (ProgressBar) findViewById(R.id.loading);
         MapLayout = (RelativeLayout) findViewById(R.id.maplayout);
@@ -170,6 +180,7 @@ public class MainActivity extends ActionBarActivity {
 
         startActivity(new Intent(this, SplashActivity.class)); // Map을 로드하고 로딩 액티비티 실행
 
+        //actionBar 관련 코드
         actionBar = getSupportActionBar();
         actionBar.setDisplayShowHomeEnabled(false);
         actionBar.setDisplayShowTitleEnabled(false);
@@ -179,6 +190,41 @@ public class MainActivity extends ActionBarActivity {
         View customView = inflater.inflate(R.layout.custom_actionbar, null);
 
         departText = (EditText) customView.findViewById(R.id.actionbar_depart);
+        departText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+                if(charSequence.length() == 0){
+                    setDepartDelete(false);
+                }
+                else{
+                    setDepartDelete(true);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
+        departText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                final boolean isEnter = keyEvent != null && keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER && keyEvent.getAction() == KeyEvent.ACTION_DOWN;
+                if(isEnter){
+                    inputMethodManager.hideSoftInputFromWindow(textView.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+                    departText.clearFocus();
+                    departSearch.callOnClick();
+                    return true;
+                }
+                return false;
+            }
+        });
+
         departSearch = (ImageButton) customView.findViewById(R.id.actionbar_depart_search);
         departSearch.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -187,12 +233,65 @@ public class MainActivity extends ActionBarActivity {
             }
         });
 
+        departDelete = (ImageButton) customView.findViewById(R.id.actionbar_depart_delete);
+        departDelete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                departText.setText("");
+                departText.requestFocus();
+            }
+        });
+
         destText = (EditText) customView.findViewById(R.id.actionbar_dest);
+        destText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+                if(charSequence.length() == 0){
+                    setDestDelete(false);
+                }
+                else{
+                    setDestDelete(true);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
+        destText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                final boolean isEnter = keyEvent != null && keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER && keyEvent.getAction() == KeyEvent.ACTION_DOWN;
+                if(isEnter){
+                    inputMethodManager.hideSoftInputFromWindow(textView.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+                    destText.clearFocus();
+                    destSearch.callOnClick();
+                    return true;
+                }
+                return false;
+            }
+        });
+
         destSearch = (ImageButton) customView.findViewById(R.id.actionbar_dest_search);
         destSearch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 //TODO 검색 기능 구현
+            }
+        });
+
+        destDelete = (ImageButton) customView.findViewById(R.id.actionbar_dest_delete);
+        destDelete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                destText.setText("");
+                destText.requestFocus();
             }
         });
 
@@ -358,7 +457,34 @@ public class MainActivity extends ActionBarActivity {
         currentx = (longitude - longitudeBase) * 1000000d / 2.8185;
         currenty = (latitudeBase - latitude) * 1000000d / 2.2529;
 
-        Map.setPin(new PointF((float) currentx, (float) currenty));
+        if(currentx <= 0 || 3366 <= currentx || currenty <= 0 || 3106 <= currenty){
+
+        }
+        else{
+            Map.setPin(new PointF((float) currentx, (float) currenty));
+        }
+    }
+
+    private void setDepartDelete(boolean activate){
+        if(activate){
+            departDelete.setVisibility(View.VISIBLE);
+            departDelete.setClickable(true);
+        }
+        else{
+            departDelete.setVisibility(View.INVISIBLE);
+            departDelete.setClickable(false);
+        }
+    }
+
+    private void setDestDelete(boolean activate){
+        if(activate){
+            destDelete.setVisibility(View.VISIBLE);
+            destDelete.setClickable(true);
+        }
+        else{
+            destDelete.setVisibility(View.INVISIBLE);
+            destDelete.setClickable(false);
+        }
     }
 /*
     @Override
