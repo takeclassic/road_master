@@ -7,6 +7,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,63 +19,146 @@ import java.util.List;
 
 public class DB extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "RoadMasterDB.db";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 9;
 
     private static final String TABLE_BUILDING = "building";
+    private static final String BUILDING_NUMBER="number";
     private static final String BUILDING_X="x";
     private static final String BUILDING_Y="y";
     private static final String BUILDING_TEXT = "text";
 
-    private static final String TABLE_MAPNODE = "node";
-    private static final String MAPNODE_X="x";
-    private static final String MAPNODE_Y="y";
-    private static final String MAPNODE_PRIMARY = "primary";
-    private static final String MAPNODE_NAME = "name";
+    private static final String TABLE_NODE = "node";
+    private static final String NODE_PRIMARY = "id";
+    private static final String NODE_X="x";
+    private static final String NODE_Y="y";
+    private static final String NODE_NAME = "name";
+    private static final String NODE_INBUILDING = "inbuilding";
 
-    /*MapNode의 classlist를 하나의 table로 뺐음 MapNode와 Classlist가 1:다의 관계로 파악*/
-    private static final String TABLE_CLASSLIST = "classlist";
-    //CLASSLIST에 들어있는 하나의 번호를 표현
-    private static final String CLASSLIST_NUM="num";
-    //MapNode의 PK를 FK로 가질 변수들
-    private static final String CLASSLIST_NODE_X="node_x";
-    private static final String CLASSLIST_NODE_Y="node_y";
+    private static final String TABLE_EDGE= "edge";
+    private static final String EDGE_PRIMARY="id";
+    private static final String EDGE_A="a";
+    private static final String EDGE_B="b";
+    private static final String EDGE_WEIGHT="weight";
 
-    /*"MapNode:MapEdge = 1:다" 로 파악함*/
-    private static final String TABLE_MAPEDGE= "edge";
-    private static final String MAPEDGE_WEIGHT="weight";
-    //MapNode를 realation으로 매핑하기 위해 만든 PK
-    private static final String MAPEDGE_ID="id";
-    //MapNode의 PK를 FK로 가질 변수들
-    private static final String MAPEDGE_NODE_X="node_x";
-    private static final String MAPEDGE_NODE_Y="node_y";
-
-    /*똑같은 건물명은 없고, 사용자는 건물명으로 검색할테니 건물명을 primary key로 함*/
     private static final String CREATE_BUILDING_TABLE = "CREATE TABLE " + TABLE_BUILDING + "("
-            + BUILDING_X + " INTEGER," + BUILDING_Y + " INTEGER," + BUILDING_TEXT + " TEXT PRIMARY KEY"
+            + BUILDING_NUMBER + " INTEGER, " + BUILDING_X + " INTEGER, " + BUILDING_Y + " INTEGER, " + BUILDING_TEXT + " TEXT"
             + ")";
 
     private static final String INSERT_BUILDING_TABLE = "INSERT INTO " + TABLE_BUILDING +
-            " SELECT 1634 AS " + BUILDING_X + ", 1819 AS " + BUILDING_Y + ", '성균관대학교\n 자연과학캠퍼스' AS " + BUILDING_TEXT +
-            " UNION ALL SELECT 2487, 991, '제2공학관'" +
-            " UNION ALL SELECT 834, 373, '신관 A동'" +
-            " UNION ALL SELECT 1072, 501, '신관 B동'";
+            " SELECT 21 AS " + BUILDING_NUMBER + ", 2447 AS " + BUILDING_X + ", 1552 AS " + BUILDING_Y + ", '제1공학관' AS " + BUILDING_TEXT +
+            " UNION ALL SELECT 25, 2534, 1023, '제2공학관'" +
+            " UNION ALL SELECT 61, 1482, 686, '생명공학관'" +
+            " UNION ALL SELECT 62, 1719, 587, '생명공학대학'" +
+            " UNION ALL SELECT 51, 1626, 883, '기초학문관'" +
+            " UNION ALL SELECT 32, 1789, 1096, '제2과학관'" +
+            " UNION ALL SELECT 31, 1885, 1309, '제1과학관'" +
+            " UNION ALL SELECT 85, 2065, 614, '산학협력관'" +
+            " UNION ALL SELECT 4, 988, 1536, '복지회관'" +
+            " UNION ALL SELECT 3, 1336, 1486, '학생회관'" +
+            " UNION ALL SELECT 4, 1338, 1484, '복지회관'" +
+            " UNION ALL SELECT 5, 808, 1844, '수성관'" +
+            " UNION ALL SELECT 71, 1235, 2322, '의학관'" +
+            " UNION ALL SELECT 53, 2440, 2449, '약학관'" +
+            " UNION ALL SELECT 33, 2593, 2614, '화학관'" +
+            " UNION ALL SELECT 40, 2889, 2528, '반도체관'" +
+            " UNION ALL SELECT 81, 3017, 2287, '제1종합연구동'" +
+            " UNION ALL SELECT 83, 3121, 1831, '제2종합연구동'" +
+            " UNION ALL SELECT 86, 2108, 2465, 'N센터'" +
+            " UNION ALL SELECT 24, 2850, 1800, '공학실습동'" + //0
+            " UNION ALL SELECT 20, 2957, 1423, '공학실습동'" + //0
+            " UNION ALL SELECT 0, 2943, 1174, '파워플랜트'" +
+            " UNION ALL SELECT 0, 2943, 1014, '생명공학실습동'" +
+            " UNION ALL SELECT 0, 2039, 368, '예관'" +
+            " UNION ALL SELECT 0, 1684, 196, '의관'" +
+            " UNION ALL SELECT 0, 1461, 209, '인관'" +
+            " UNION ALL SELECT 0, 1825, 1532, '삼성학술정보관'" +
+            " UNION ALL SELECT 0, 918, 2245, '대강당'" +
+            " UNION ALL SELECT 0, 265, 2202, '체육관'" +
+            " UNION ALL SELECT 0, 918, 2245, '대강당'" +
+            " UNION ALL SELECT 0, 2328, 2625, '제약기술관'" +
+            " UNION ALL SELECT 0, 1954, 2841, '환경플랜트'" +
+            " UNION ALL SELECT 0, 834, 373, '신관 A동'" +
+            " UNION ALL SELECT 0, 1072, 501, '신관 B동'";
 
-//    private static final String CREATE_MAPNODE_TABLE = "CREATE TABLE " + TABLE_MAPNODE + "("
-//            + MAPNODE_X + " INTEGER NOT NULL," + MAPNODE_Y + " INTEGER NOT NULL," + MAPNODE_NAME + " TEXT,"
-//            + MAPNODE_PRIMARY + "INTEGER," + " PRIMARY KEY (x,y)" + ")";
-//
-//    /*안드로이드는 프로요 2.2부터 FK를 지원함*/
-//    private static final String CREATE_MAPEDGE_TABLE = "CREATE TABLE " + TABLE_MAPEDGE + "("
-//            + MAPEDGE_WEIGHT + " INTEGER," + MAPEDGE_ID + " INTEGER PRIMARY KEY," + MAPEDGE_NODE_X + " INTEGER," + MAPEDGE_NODE_Y + " INTEGER,"
-//            + " FOREIGN KEY (x,y) REFERENCES node(x,y)" +")";
+    private static final String CREATE_NODE_TABLE = "CREATE TABLE " + TABLE_NODE + "("
+            + NODE_PRIMARY + " INTEGER PRIMARY KEY, " + NODE_X + " INTEGER, "+ NODE_Y + " INTEGER, " + NODE_NAME + " TEXT, " + NODE_INBUILDING + " INTEGER"
+            + ")";
+
+    /*안드로이드는 프로요 2.2부터 FK를 지원함*/
+    private static final String CREATE_EDGE_TABLE = "CREATE TABLE " + TABLE_EDGE + "("
+            + EDGE_PRIMARY + " INTEGER PRIMARY KEY, " + EDGE_A + " INTEGER, " + EDGE_B + " INTEGER, " + EDGE_WEIGHT + " REAL,"
+            + " FOREIGN KEY("+EDGE_A+", "+EDGE_B+") REFERENCES "+TABLE_NODE+"("+NODE_PRIMARY+", "+NODE_PRIMARY+")" + ")";
 //
 //    private static final String CREATE_CLASSLIST_TABLE = "CREATE TABLE " + TABLE_CLASSLIST + "("
 //            + CLASSLIST_NUM + " INTEGER PRIMARY KEY," + CLASSLIST_NODE_X +" INTEGER," + CLASSLIST_NODE_Y + " INTEGER,"
 //            + " FOREIGN KEY (x,y) REFERENCES node(x,y)" + ")";
 
+    private Context context;
 
     public DB(Context context){
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
+        this.context = context;
+    }
+
+    public String INSERT_NODE_TABLE(){
+        String INSERT_NODE_TABLE = "INSERT INTO " + TABLE_NODE;
+        try {
+            InputStreamReader inputStreamReader = new InputStreamReader(context.getAssets().open("node.csv"), "euc-kr");
+            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+
+            bufferedReader.readLine();
+
+            StringBuffer stringBuffer = new StringBuffer();
+            String line = bufferedReader.readLine();
+            String[] linearray = line.split(",");
+
+            INSERT_NODE_TABLE = stringBuffer.append(INSERT_NODE_TABLE).append(" SELECT ").append(linearray[0]).append(" AS ").append(NODE_PRIMARY).append(", ")
+                    .append(linearray[1]).append(" AS ").append(NODE_X).append(", ")
+                    .append(linearray[2]).append(" AS ").append(NODE_Y).append(", '")
+                    .append(linearray[3]).append("' AS ").append(NODE_NAME).append(", ")
+                    .append(linearray[4]).append(" AS ").append(NODE_INBUILDING)
+                    .toString();
+
+            while((line = bufferedReader.readLine()) != null){
+                linearray = line.split(",");
+                INSERT_NODE_TABLE = stringBuffer.append(" UNION ALL SELECT ")
+                        .append(linearray[0]).append(", ").append(linearray[1]).append(", ").append(linearray[2]).append(", '").append(linearray[3]).append("', ").append(linearray[4]).toString();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return INSERT_NODE_TABLE;
+    }
+
+    public String INSERT_EDGE_TABLE(){
+        String INSERT_EDGE_TABLE = "INSERT INTO " + TABLE_EDGE;
+        try {
+            InputStreamReader inputStreamReader = new InputStreamReader(context.getAssets().open("edge.csv"));
+            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+
+            bufferedReader.readLine();
+
+            StringBuffer stringBuffer = new StringBuffer();
+            String line = bufferedReader.readLine();
+            String[] linearray = line.split(",");
+
+            INSERT_EDGE_TABLE = stringBuffer.append(INSERT_EDGE_TABLE).append(" SELECT ").append(linearray[0]).append(" AS ").append(EDGE_PRIMARY).append(", ")
+                    .append(linearray[1]).append(" AS ").append(EDGE_A).append(", ")
+                    .append(linearray[2]).append(" AS ").append(EDGE_B).append(", ")
+                    .append(linearray[3]).append(" AS ").append(EDGE_WEIGHT)
+                    .toString();
+
+            while((line = bufferedReader.readLine()) != null){
+                linearray = line.split(",");
+                INSERT_EDGE_TABLE = stringBuffer.append(" UNION ALL SELECT ")
+                        .append(linearray[0]).append(", ").append(linearray[1]).append(", ").append(linearray[2]).append(", ").append(linearray[3]).toString();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return INSERT_EDGE_TABLE;
     }
 
     @Override
@@ -88,12 +174,20 @@ public class DB extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(CREATE_BUILDING_TABLE);
         db.execSQL(INSERT_BUILDING_TABLE);
+
+        db.execSQL(CREATE_NODE_TABLE);
+        db.execSQL(INSERT_NODE_TABLE());
+
+        db.execSQL(CREATE_EDGE_TABLE);
+        db.execSQL(INSERT_EDGE_TABLE());
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         // on upgrade drop older tables
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_BUILDING);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_EDGE);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_NODE);
         // create new tables
         onCreate(db);
     }
@@ -105,12 +199,42 @@ public class DB extends SQLiteOpenHelper {
         Cursor c = db.rawQuery("SELECT * FROM " + TABLE_BUILDING, null);
         if(c.moveToFirst()){
             while(!c.isAfterLast()){
-                buildings.add(new Building(c.getInt(c.getColumnIndex(BUILDING_X)), c.getInt(c.getColumnIndex(BUILDING_Y)), c.getString(c.getColumnIndex(BUILDING_TEXT))));
+                buildings.add(new Building(c.getInt(c.getColumnIndex(BUILDING_NUMBER)), c.getInt(c.getColumnIndex(BUILDING_X)), c.getInt(c.getColumnIndex(BUILDING_Y)), c.getString(c.getColumnIndex(BUILDING_TEXT))));
                 c.moveToNext();
             }
         }
 
         return  buildings;
+    }
+
+    public ArrayList<MapNode> getNodes(){
+        ArrayList<MapNode> nodes = new ArrayList<MapNode>();
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM " + TABLE_NODE, null);
+        if(c.moveToFirst()){
+            while(!c.isAfterLast()){
+                nodes.add(new MapNode(c.getInt(c.getColumnIndex(NODE_PRIMARY)), c.getInt(c.getColumnIndex(NODE_X)), c.getInt(c.getColumnIndex(NODE_Y)), c.getString(c.getColumnIndex(NODE_NAME)), c.getInt(c.getColumnIndex(NODE_INBUILDING))));
+                c.moveToNext();
+            }
+        }
+
+        return nodes;
+    }
+
+    public ArrayList<MapEdgeData> getEdges(){
+        ArrayList<MapEdgeData> edges = new ArrayList<MapEdgeData>();
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM " + TABLE_EDGE, null);
+        if(c.moveToFirst()){
+            while(!c.isAfterLast()){
+                edges.add(new MapEdgeData(c.getInt(c.getColumnIndex(EDGE_PRIMARY)), c.getInt(c.getColumnIndex(EDGE_A)), c.getInt(c.getColumnIndex(EDGE_B)), c.getFloat(c.getColumnIndex(EDGE_WEIGHT))));
+                c.moveToNext();
+            }
+        }
+
+        return edges;
     }
 
 

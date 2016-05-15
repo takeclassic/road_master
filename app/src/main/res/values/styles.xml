@@ -1,5 +1,10 @@
 <resources>
 
+    <style name="custom_spinner_style">
+        <item name="android:divider">#adcd58</item>
+        <item name="android:dividerHeight">1dp</item>
+    </style>
+
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <!-- Customize your theme here. -->
@@ -7,23 +12,11 @@
         <item name="android:actionBarSize">@dimen/bar_height</item>
     </style>
 
-    <style name="FullscreenTheme" parent="android:Theme.NoTitleBar">
-        <item name="android:windowContentOverlay">@null</item>
-        <item name="android:windowBackground">@null</item>
-        <item name="metaButtonBarStyle">@style/ButtonBar</item>
-        <item name="metaButtonBarButtonStyle">@style/ButtonBarButton</item>
+    <style name="AppTheme2" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="actionBarSize">@dimen/bar_height2</item>
+        <item name="android:actionBarSize">@dimen/bar_height2</item>
+        <item name="android:dropDownListViewStyle">@style/custom_spinner_style</item>
     </style>
-
-    <!-- Backward-compatible version of ?android:attr/buttonBarStyle -->
-    <style name="ButtonBar">
-        <item name="android:paddingLeft">2dp</item>
-        <item name="android:paddingTop">5dp</item>
-        <item name="android:paddingRight">2dp</item>
-        <item name="android:paddingBottom">0dp</item>
-        <item name="android:background">@android:drawable/bottom_bar</item>
-    </style>
-
-    <!-- Backward-compatible version of ?android:attr/buttonBarButtonStyle -->
-    <style name="ButtonBarButton" />
 
 </resources>

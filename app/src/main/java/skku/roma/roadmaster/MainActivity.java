@@ -4,8 +4,6 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.PointF;
 import android.location.Location;
 import android.location.LocationListener;
@@ -30,7 +28,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -39,12 +36,10 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.ListIterator;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import skku.roma.roadmaster.util.Building;
-import skku.roma.roadmaster.util.BuildingList;
 import skku.roma.roadmaster.util.DB;
 import skku.roma.roadmaster.util.MapGraph;
 import skku.roma.roadmaster.util.MapNode;
@@ -56,7 +51,6 @@ import skku.roma.roadmaster.util.MapView;
 public class MainActivity extends ActionBarActivity {
 
     private ProgressBar loading;
-    private RelativeLayout MapLayout;
 
     // ActionBar 관련 View
     private ActionBar actionBar;
@@ -69,11 +63,11 @@ public class MainActivity extends ActionBarActivity {
     InputMethodManager inputMethodManager;
 
     MapView Map;
-    private float MapScale;
-    private int MapWidth;
-    private int MapHeight;
     ArrayList<Building> buildings;
     MapGraph Graph;
+    MapNode departNode;
+    MapNode destNode;
+    public static ArrayList<MapNode> path;
 
     ImageButton PlusButton;
     ImageButton MinusButton;
@@ -83,19 +77,25 @@ public class MainActivity extends ActionBarActivity {
     boolean locationSuccess;
     private static final double latitudeBase = 37.297452;
     private static final double longitudeBase = 126.969801;
+
     Handler handler = new Handler(){
         @Override
         public void handleMessage(Message msg) {
             if(!locationSuccess){
                 Toast.makeText(getApplicationContext(), "위치 정보 수신에 실패했습니다.", Toast.LENGTH_SHORT).show();
+                departText.setText("내위치: 찾을 수 없음");
             }
-        };
+        }
     };
     double currentx;
     double currenty;
 
     //Database
     DB db;
+
+    private float BUILDINGX = 200;
+    private float BUILDINGY = 100;
+    private static int BUILDING = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,11 +108,10 @@ public class MainActivity extends ActionBarActivity {
         inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
 
         loading = (ProgressBar) findViewById(R.id.loading);
-        MapLayout = (RelativeLayout) findViewById(R.id.maplayout);
         PlusButton = (ImageButton) findViewById(R.id.plusbutton);
         MinusButton = (ImageButton) findViewById(R.id.minusbutton);
 
-        Graph = new MapGraph();
+        Graph = new MapGraph(db);
 
         Map = (MapView) findViewById(R.id.view_map);
         Map.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_CROP);
@@ -122,8 +121,17 @@ public class MainActivity extends ActionBarActivity {
             @Override
             public boolean onSingleTapConfirmed(MotionEvent e) {
                 if(Map.isReady()){
-                    PointF coordinate = Map.viewToSourceCoord(e.getX(), e.getY()); // 터치 시 좌표 정보를 알 수 있어요~~
-                    Toast.makeText(getApplicationContext(), "X : " + Float.toString(coordinate.x) + " Y : " + Float.toString(coordinate.y), Toast.LENGTH_SHORT).show();
+                    PointF coordinate = Map.viewToSourceCoord(e.getX(), e.getY());
+                    float x = coordinate.x;
+                    float y = coordinate.y;
+                    for(Building building : buildings)
+                        if (building.number != 0 && building.x - BUILDINGX < x && x < building.x + BUILDINGX && building.y - BUILDINGY < y && y < building.y + BUILDINGY) {
+                            Intent buildingActivity = new Intent(MainActivity.this, BuildingActivity.class);
+                            buildingActivity.putExtra("number", building.number);
+                            buildingActivity.putExtra("name", building.text);
+                            startActivityForResult(buildingActivity, BUILDING);
+                            break;
+                        }
                 }
                 return true;
             }
@@ -132,13 +140,6 @@ public class MainActivity extends ActionBarActivity {
         Map.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
-                if(Map.isReady()) {
-                    if (MapScale != Map.getScale()) {
-                        MapScale = Map.getScale();
-                    }
-                    //updateView();
-                }
-
                 return gestureDetector.onTouchEvent(motionEvent);
             }
         });
@@ -146,10 +147,6 @@ public class MainActivity extends ActionBarActivity {
         Map.setOnImageEventListener(new SubsamplingScaleImageView.OnImageEventListener() {
             @Override
             public void onReady() {
-                MapScale = Map.getScale();
-                MapHeight = Map.getHeight();
-                MapWidth = Map.getWidth();
-
                 Map.setMaxScale(1.5f);
             }
 
@@ -392,31 +389,14 @@ public class MainActivity extends ActionBarActivity {
 
     public void onSearchClick(View view) {
         //TODO 검색 기능 구현
-        Map.setTest(Graph); // TEST
+        Map.setTest(Graph, db.getEdges()); // TEST
     }
 
     public void onFindWayClick(View view) {
         //TODO 길찾기 기능 구현, 예시
-        ArrayList<MapNode> path = Graph.FindTheWay(Graph.FindTheNode(720, 460), Graph.FindTheNode(1000, 550));
+        path = Graph.FindTheWay(Graph.getNodeByLocation(720, 460), Graph.getNodeByLocation(1000, 550));
         Map.setPath(path);
     }
-
-    /*
-	@Deprecated
-    private void updateView(){
-        float centerx = Map.getCenter().x;
-        float centery = Map.getCenter().y;
-        float minx = centerx - (MapWidth / 2) / MapScale;
-        float miny = centery - (MapHeight / 2) / MapScale;
-        float maxx = centerx + (MapWidth / 2) / MapScale;
-        float maxy = centery + (MapHeight / 2) / MapScale;
-
-        //Log.d("ROMA", MapWidth + " " + MapHeight + " " + MapScale);
-        //Log.d("ROMA", centerx + " " + centery + " " + minx + " " + miny + " " + maxx + " " + maxy);
-
-        buildings.setVisible(minx, maxx, miny, maxy, MapScale);
-    }
-    */
 
     private void zoom(float scale){
         float newscale = Map.getScale() + scale;
@@ -429,8 +409,6 @@ public class MainActivity extends ActionBarActivity {
 
         SubsamplingScaleImageView.AnimationBuilder animationBuilder = Map.animateScale(newscale);
         animationBuilder.withDuration(500).start();
-        MapScale = newscale;
-        //updateView();
     }
 
     private void pleaseTurnOnGps() {
@@ -453,14 +431,17 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void setPin(double latitude, double longitude){
-        Log.d("ROMA", "latitude : " +latitude+ ", longitude : " +longitude);
         currentx = (longitude - longitudeBase) * 1000000d / 2.8185;
         currenty = (latitudeBase - latitude) * 1000000d / 2.2529;
 
         if(currentx <= 0 || 3366 <= currentx || currenty <= 0 || 3106 <= currenty){
-
+            departNode = null;
+            departText.setText("내위치: 학교 내부가 아닙니다.");
         }
         else{
+            Log.d("ROMA", "currentx : " + (int) currentx + "currenty : " + (int) currenty);
+            departNode = Graph.getNodeByLocation((int) currentx, (int) currenty);
+            departText.setText("내위치: " + departNode.getName());
             Map.setPin(new PointF((float) currentx, (float) currenty));
         }
     }
@@ -486,7 +467,20 @@ public class MainActivity extends ActionBarActivity {
             destDelete.setClickable(false);
         }
     }
-/*
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == BUILDING && resultCode == BuildingActivity.RESULT_GPS){
+            currentx = data.getDoubleExtra("x", currentx);
+            currenty = data.getDoubleExtra("y", currenty);
+            departNode = Graph.getNodeByLocation((int) currentx, (int) currenty);
+            departText.setText("내위치: " + departNode.getName());
+            Map.setPin(new PointF((float) currentx, (float) currenty));
+        }
+    }
+
+    /*
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.

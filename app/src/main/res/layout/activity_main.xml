@@ -2,28 +2,13 @@
     xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
-    android:id="@+id/maplayout">
+    android:id="@+id/maplayout"
+    android:background="#FFFFFF">
 
     <skku.roma.roadmaster.util.MapView
         android:id="@+id/view_map"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
-
-    <!--
-    <TextView
-        android:id="@+id/textview1"
-        android:text=" 성균관대학교\n자연과학캠퍼스"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="invisible"/>
-
-    <TextView
-        android:id="@+id/textview2"
-        android:text=" 성균관대학교\n자연과학캠퍼스"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="invisible"/>
-     -->
 
     <ProgressBar
         android:id="@+id/loading"

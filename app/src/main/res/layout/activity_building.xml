@@ -1,0 +1,25 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="skku.roma.roadmaster.BuildingActivity"
+    android:background="#FFFFFF">
+
+    <skku.roma.roadmaster.util.BuildingView
+        android:id="@+id/view_building"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <ImageButton
+        android:id="@+id/gpsbutton2"
+        android:src="@drawable/gps"
+        android:background="@drawable/round"
+        android:layout_alignParentRight="true"
+        android:layout_marginTop="30dp"
+        android:layout_marginRight="30dp"
+        android:scaleType="centerInside"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:padding="5dp"
+        android:onClick="onGpsClick"/>
+
+</RelativeLayout>

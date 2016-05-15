@@ -31,10 +31,11 @@ public class MapView extends SubsamplingScaleImageView {
     private Bitmap Pin;
     private ArrayList<Building> buildings;
 
-    private int textSize = 20;
+    private int textSize = 16;
 
     //Test
     Map<Integer, MapNode> map;
+    ArrayList<MapEdgeData> edges;
 
     public MapView(Context context){
         this(context, null);
@@ -72,8 +73,8 @@ public class MapView extends SubsamplingScaleImageView {
 
     public void setPin(PointF current){
         this.current = current;
+        animateScaleAndCenter(getMaxScale(), current).withDuration(1000).start();
         invalidate();
-        Log.d("ROMA", "x : "+current.x+", y : "+current.y);
     }
 
     public void setPath(ArrayList<MapNode> path){
@@ -82,8 +83,9 @@ public class MapView extends SubsamplingScaleImageView {
     }
 
     @Deprecated
-    public void setTest(MapGraph graph){
+    public void setTest(MapGraph graph, ArrayList<MapEdgeData> edges){
         map = graph.Graph;
+        this.edges = edges;
         invalidate();
     }
 
@@ -97,7 +99,7 @@ public class MapView extends SubsamplingScaleImageView {
 
         Paint paint = new Paint();
         paint.setAntiAlias(true);
-        paint.setStrokeWidth(5);
+        paint.setStrokeWidth(3);
         paint.setColor(Color.RED);
         paint.setStyle(Paint.Style.STROKE);
 
@@ -109,33 +111,53 @@ public class MapView extends SubsamplingScaleImageView {
         }
 
         if(path != null){
-            if(departPin != null){
-                PointF coord = sourceToViewCoord(path.get(0).x, path.get(0).y);
+            if(departPin != null && path.get(path.size() - 1).inBuilding == 0){
+                PointF coord = sourceToViewCoord(path.get(path.size() - 1).x, path.get(path.size() - 1).y);
                 float x = coord.x - (departPin.getWidth() / 2);
                 float y = coord.y - departPin.getHeight();
                 canvas.drawBitmap(departPin, x, y, paint);
             }
 
-            if(destPin != null){
-                PointF coord = sourceToViewCoord(path.get(path.size() - 1).x, path.get(path.size() - 1).y);
+            if(destPin != null && path.get(0).inBuilding == 0){
+                PointF coord = sourceToViewCoord(path.get(0).x, path.get(0).y);
                 float x = coord.x - (destPin.getWidth() / 2);
                 float y = coord.y - destPin.getHeight();
                 canvas.drawBitmap(destPin, x, y, paint);
             }
 
             Path line = new Path();
-            PointF start = sourceToViewCoord(path.get(0).x, path.get(0).y);
-            line.moveTo(start.x, start.y);
+            PointF start;
+            int index;
+            for (index = 0;index < path.size(); index++){
+                if(path.get(index).inBuilding == 0){
+                    start = sourceToViewCoord(path.get(index).x, path.get(index).y);
+                    line.moveTo(start.x, start.y);
+                    break;
+                }
+            }
 
-            for (int index = 1; index < path.size(); index++){
-                PointF end = sourceToViewCoord(path.get(index).x, path.get(index).y);
-                line.lineTo(end.x, end.y);
+            boolean newline = false;
+
+            for (index = index + 1; index < path.size(); index++){
+                if(path.get(index).inBuilding == 0) {
+                    PointF end = sourceToViewCoord(path.get(index).x, path.get(index).y);
+                    if(newline){
+                        line.moveTo(end.x, end.y);
+                        newline = false;
+                    }
+                    else {
+                        line.lineTo(end.x, end.y);
+                    }
+                }
+                else{
+                    canvas.drawPath(line, paint);
+                    newline = true;
+                }
             }
 
             canvas.drawPath(line, paint);
         }
 
-        //TODO 글자 추적되는 기능 테스트버전. 엔터처리, buildingList 객체 참조하기 구현해야합니다. 가능하다면 좌표기준설정과 정렬기능또한.
         Paint textPaint = new TextPaint();
         textPaint.setTextSize(textSize);
         textPaint.setAntiAlias(true);
@@ -144,23 +166,24 @@ public class MapView extends SubsamplingScaleImageView {
         if(buildings != null){
             for(Building building : buildings){
                 PointF textPoint = sourceToViewCoord(building.x, building.y);
-                canvas.drawText(building.text, textPoint.x, textPoint.y, textPaint);
+                // canvas.drawPoint(textPoint.x, textPoint.y, paint);
+                canvas.drawText(building.text, textPoint.x - textPaint.measureText(building.text) / 2, textPoint.y + textSize / 2, textPaint);
             }
         }
 
         //TEST
-        paint.setStrokeWidth(3);
-        if(map != null){
-            for(Map.Entry<Integer, MapNode> elem : map.entrySet()){
-                MapNode node = elem.getValue();
+        //paint.setStrokeWidth(3);
+        if(map != null && edges != null){
+            for(MapEdgeData edgeData : edges){
+                MapNode a = map.get(edgeData.a);
+                MapNode b = map.get(edgeData.b);
 
-                PointF start = sourceToViewCoord(node.x, node.y);
+                if(a.inBuilding == 0 && b.inBuilding == 0) {
+                    PointF start = sourceToViewCoord(a.x, a.y);
+                    PointF end = sourceToViewCoord(b.x, b.y);
 
-                ArrayList<MapEdge> list = node.edgelist;
-                for(MapEdge edge : list){
                     Path line = new Path();
                     line.moveTo(start.x, start.y);
-                    PointF end = sourceToViewCoord(edge.other.x, edge.other.y);
                     line.lineTo(end.x, end.y);
                     canvas.drawPath(line, paint);
                 }

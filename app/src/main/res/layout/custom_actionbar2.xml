@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="60dp"
+    android:background="@drawable/actionbar"
+    android:padding="10dp"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
+
+    <ImageView
+        android:id="@+id/actionbar2_icon"
+        android:src="@drawable/icon_noback"
+        android:layout_width="30dp"
+        android:layout_height="30dp"/>
+
+    <TextView
+        android:id="@+id/actionbar2_text"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_toRightOf="@id/actionbar2_icon"
+        android:background="#00000000"
+        android:textColor="#FFFFFF"
+        android:text="건물 이름"
+        android:textSize="20dp"
+        android:textStyle="bold"
+        android:gravity="center_vertical"
+        android:layout_marginLeft="10dp"
+        android:layout_marginBottom="10dp"/>
+
+    <Spinner
+        android:id="@+id/actionbar2_spinner"
+        android:layout_alignParentRight="true"
+        android:layout_width="70dp"
+        android:layout_height="35dp">
+    </Spinner>
+
+</RelativeLayout>
