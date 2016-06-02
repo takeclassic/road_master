@@ -1,0 +1,43 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="skku.roma.roadmaster.SearchActivity">
+
+    <TextView
+        android:id="@+id/search_cache"
+        android:text="검색 기록"
+        android:textSize="30dp"
+        android:gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:visibility="gone"/>
+
+    <ListView
+        android:id="@+id/search_list"
+        android:layout_below="@+id/search_cache"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <RelativeLayout
+        android:id="@+id/search_empty"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone">
+
+    <TextView
+        android:gravity="center"
+        android:text="\?"
+        android:textSize="200dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:text="검색된 결과가 없습니다."
+        android:textSize="25dp"
+        android:textColor="#000000"
+        android:gravity="center"
+        android:layout_height="match_parent"/>
+
+    </RelativeLayout>
+</RelativeLayout>

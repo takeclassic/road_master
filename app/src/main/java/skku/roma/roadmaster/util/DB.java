@@ -19,7 +19,7 @@ import java.util.List;
 
 public class DB extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "RoadMasterDB.db";
-    private static final int DATABASE_VERSION = 9;
+    private static final int DATABASE_VERSION = 4;
 
     private static final String TABLE_BUILDING = "building";
     private static final String BUILDING_NUMBER="number";
@@ -39,6 +39,18 @@ public class DB extends SQLiteOpenHelper {
     private static final String EDGE_A="a";
     private static final String EDGE_B="b";
     private static final String EDGE_WEIGHT="weight";
+
+    private static final String TABLE_CLASS= "class";
+    private static final String CLASS_PRIMARY="id";
+    private static final String CLASS_NAME="name";
+    private static final String CLASS_X="x";
+    private static final String CLASS_Y="y";
+    private static final String CLASS_A="a";
+    private static final String CLASS_AWEIGHT="aweight";
+    private static final String CLASS_B="b";
+    private static final String CLASS_BWEIGHT="bweight";
+
+    private static final String TABLE_CACHE="cache";
 
     private static final String CREATE_BUILDING_TABLE = "CREATE TABLE " + TABLE_BUILDING + "("
             + BUILDING_NUMBER + " INTEGER, " + BUILDING_X + " INTEGER, " + BUILDING_Y + " INTEGER, " + BUILDING_TEXT + " TEXT"
@@ -88,10 +100,14 @@ public class DB extends SQLiteOpenHelper {
     private static final String CREATE_EDGE_TABLE = "CREATE TABLE " + TABLE_EDGE + "("
             + EDGE_PRIMARY + " INTEGER PRIMARY KEY, " + EDGE_A + " INTEGER, " + EDGE_B + " INTEGER, " + EDGE_WEIGHT + " REAL,"
             + " FOREIGN KEY("+EDGE_A+", "+EDGE_B+") REFERENCES "+TABLE_NODE+"("+NODE_PRIMARY+", "+NODE_PRIMARY+")" + ")";
-//
-//    private static final String CREATE_CLASSLIST_TABLE = "CREATE TABLE " + TABLE_CLASSLIST + "("
-//            + CLASSLIST_NUM + " INTEGER PRIMARY KEY," + CLASSLIST_NODE_X +" INTEGER," + CLASSLIST_NODE_Y + " INTEGER,"
-//            + " FOREIGN KEY (x,y) REFERENCES node(x,y)" + ")";
+
+    private static final String CREATE_CLASS_TABLE = "CREATE TABLE " + TABLE_CLASS + "("
+            + CLASS_PRIMARY + " STRING PRIMARY KEY, " + CLASS_NAME + " STRING, " + CLASS_X + " INTEGER, " + CLASS_Y + " INTEGER, " + CLASS_A + " INTEGER, " + CLASS_AWEIGHT + " REAL, " + CLASS_B + " INTEGER, " + CLASS_BWEIGHT + " REAL,"
+            + " FOREIGN KEY("+CLASS_A+", "+CLASS_B+") REFERENCES "+TABLE_NODE+"("+NODE_PRIMARY+", "+NODE_PRIMARY+")" + ")";
+
+    private static final String CREATE_CACHE_TABLE = "CREATE TABLE " + TABLE_CACHE + "("
+            + CLASS_PRIMARY + " STRING PRIMARY KEY, " + CLASS_NAME + " STRING, " + CLASS_X + " INTEGER, " + CLASS_Y + " INTEGER, " + CLASS_A + " INTEGER, " + CLASS_AWEIGHT + " REAL, " + CLASS_B + " INTEGER, " + CLASS_BWEIGHT + " REAL,"
+            + " FOREIGN KEY("+CLASS_A+", "+CLASS_B+") REFERENCES "+TABLE_NODE+"("+NODE_PRIMARY+", "+NODE_PRIMARY+")" + ")";
 
     private Context context;
 
@@ -100,13 +116,11 @@ public class DB extends SQLiteOpenHelper {
         this.context = context;
     }
 
-    public String INSERT_NODE_TABLE(){
+    private String INSERT_NODE_TABLE(){
         String INSERT_NODE_TABLE = "INSERT INTO " + TABLE_NODE;
         try {
             InputStreamReader inputStreamReader = new InputStreamReader(context.getAssets().open("node.csv"), "euc-kr");
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-
-            bufferedReader.readLine();
 
             StringBuffer stringBuffer = new StringBuffer();
             String line = bufferedReader.readLine();
@@ -131,13 +145,11 @@ public class DB extends SQLiteOpenHelper {
         return INSERT_NODE_TABLE;
     }
 
-    public String INSERT_EDGE_TABLE(){
+    private String INSERT_EDGE_TABLE(){
         String INSERT_EDGE_TABLE = "INSERT INTO " + TABLE_EDGE;
         try {
             InputStreamReader inputStreamReader = new InputStreamReader(context.getAssets().open("edge.csv"));
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-
-            bufferedReader.readLine();
 
             StringBuffer stringBuffer = new StringBuffer();
             String line = bufferedReader.readLine();
@@ -161,12 +173,49 @@ public class DB extends SQLiteOpenHelper {
         return INSERT_EDGE_TABLE;
     }
 
+    private void INSERT_CLASS_TABLE(SQLiteDatabase db){
+        try {
+            InputStreamReader inputStreamReader = new InputStreamReader(context.getAssets().open("class.csv"), "euc-kr");
+            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+
+            String line;
+
+            while((line = bufferedReader.readLine()) != null){
+                String[] linearray = line.split(",");
+                if(linearray.length == 6){
+                    ContentValues values = new ContentValues();
+                    values.put(CLASS_PRIMARY, linearray[0]);
+                    values.put(CLASS_NAME, linearray[1]);
+                    values.put(CLASS_X, linearray[2]);
+                    values.put(CLASS_Y, linearray[3]);
+                    values.put(CLASS_A, linearray[4]);
+                    values.put(CLASS_AWEIGHT, linearray[5]);
+                    db.insert(TABLE_CLASS, null, values);
+                }
+                else {
+                    ContentValues values = new ContentValues();
+                    values.put(CLASS_PRIMARY, linearray[0]);
+                    values.put(CLASS_NAME, linearray[1]);
+                    values.put(CLASS_X, linearray[2]);
+                    values.put(CLASS_Y, linearray[3]);
+                    values.put(CLASS_A, linearray[4]);
+                    values.put(CLASS_AWEIGHT, linearray[5]);
+                    values.put(CLASS_B, linearray[6]);
+                    values.put(CLASS_BWEIGHT, linearray[7]);
+                    db.insert(TABLE_CLASS, null, values);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void onOpen(SQLiteDatabase db) {
         super.onOpen(db);
         if (!db.isReadOnly()) {
             // Enable foreign key constraints
-            db.execSQL("PRAGMA foreign_keys=ON;");
+            //db.execSQL("PRAGMA foreign_keys=ON;");
         }
     }
 
@@ -180,6 +229,11 @@ public class DB extends SQLiteOpenHelper {
 
         db.execSQL(CREATE_EDGE_TABLE);
         db.execSQL(INSERT_EDGE_TABLE());
+
+        db.execSQL(CREATE_CLASS_TABLE);
+        INSERT_CLASS_TABLE(db);
+
+        db.execSQL(CREATE_CACHE_TABLE);
     }
 
     @Override
@@ -188,8 +242,15 @@ public class DB extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_BUILDING);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_EDGE);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_NODE);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_CLASS);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_CACHE);
         // create new tables
         onCreate(db);
+    }
+
+    @Override
+    public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        onUpgrade(db, oldVersion, newVersion);
     }
 
     public ArrayList<Building> getBuildings(){
@@ -237,19 +298,106 @@ public class DB extends SQLiteOpenHelper {
         return edges;
     }
 
+    public Classroom getClass(String primary){
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT * FROM " + TABLE_CLASS + " WHERE " + CLASS_PRIMARY + " = '" + primary + "'", null);
+        c.moveToFirst();
+        if(!c.isNull(c.getColumnIndex(CLASS_B))){
+            return new Classroom(c.getString(c.getColumnIndex(CLASS_PRIMARY)), c.getString(c.getColumnIndex(CLASS_NAME)), c.getInt(c.getColumnIndex(CLASS_X)), c.getInt(c.getColumnIndex(CLASS_Y)), c.getInt(c.getColumnIndex(CLASS_A)), c.getFloat(c.getColumnIndex(CLASS_AWEIGHT)), c.getInt(c.getColumnIndex(CLASS_B)), c.getFloat(c.getColumnIndex(CLASS_BWEIGHT)));
+        }
+        else{
+            return new Classroom(c.getString(c.getColumnIndex(CLASS_PRIMARY)), c.getString(c.getColumnIndex(CLASS_NAME)), c.getInt(c.getColumnIndex(CLASS_X)), c.getInt(c.getColumnIndex(CLASS_Y)), c.getInt(c.getColumnIndex(CLASS_A)), c.getFloat(c.getColumnIndex(CLASS_AWEIGHT)));
+        }
+    }
 
-//    /*CRUDs concerning Building object*/
-//    public void insertBuilding(Building build) {
-//        SQLiteDatabase db = this.getWritableDatabase();
-//
-//        ContentValues values = new ContentValues();
-//        values.put(BUILDING_X, build.getX());
-//        values.put(BUILDING_Y, build.getY());
-//        values.put(BUILDING_TEXT, build.getText());
-//
-//        // insert row
-//        db.insert(TABLE_BUILDING, null, values);
-//    }
+    public ArrayList<Classroom> searchClass(String text){
+        ArrayList<Classroom> classes = new ArrayList<Classroom>();
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        if(Character.isDigit(text.charAt(0))){
+            Cursor c = db.rawQuery("SELECT * FROM " + TABLE_CLASS + " WHERE " + CLASS_PRIMARY + " LIKE '" + text + "%'", null);
+            if(c.moveToFirst()){
+                while(!c.isAfterLast()){
+                    if(!c.isNull(c.getColumnIndex(CLASS_B))){
+                        classes.add(new Classroom(c.getString(c.getColumnIndex(CLASS_PRIMARY)), c.getString(c.getColumnIndex(CLASS_NAME)), c.getInt(c.getColumnIndex(CLASS_X)), c.getInt(c.getColumnIndex(CLASS_Y)), c.getInt(c.getColumnIndex(CLASS_A)), c.getFloat(c.getColumnIndex(CLASS_AWEIGHT)), c.getInt(c.getColumnIndex(CLASS_B)), c.getFloat(c.getColumnIndex(CLASS_BWEIGHT))));
+                    }
+                    else{
+                        classes.add(new Classroom(c.getString(c.getColumnIndex(CLASS_PRIMARY)), c.getString(c.getColumnIndex(CLASS_NAME)), c.getInt(c.getColumnIndex(CLASS_X)), c.getInt(c.getColumnIndex(CLASS_Y)), c.getInt(c.getColumnIndex(CLASS_A)), c.getFloat(c.getColumnIndex(CLASS_AWEIGHT))));
+                    }
+                    c.moveToNext();
+                }
+            }
+        }
+        else{
+            Cursor c = db.rawQuery("SELECT * FROM " + TABLE_CLASS + " WHERE " + CLASS_NAME + " LIKE '%" + text + "%'", null);
+            if(c.moveToFirst()){
+                while(!c.isAfterLast()){
+                    if(!c.isNull(c.getColumnIndex(CLASS_B))){
+                        classes.add(new Classroom(c.getString(c.getColumnIndex(CLASS_PRIMARY)), c.getString(c.getColumnIndex(CLASS_NAME)), c.getInt(c.getColumnIndex(CLASS_X)), c.getInt(c.getColumnIndex(CLASS_Y)), c.getInt(c.getColumnIndex(CLASS_A)), c.getFloat(c.getColumnIndex(CLASS_AWEIGHT)), c.getInt(c.getColumnIndex(CLASS_B)), c.getFloat(c.getColumnIndex(CLASS_BWEIGHT))));
+                    }
+                    else{
+                        classes.add(new Classroom(c.getString(c.getColumnIndex(CLASS_PRIMARY)), c.getString(c.getColumnIndex(CLASS_NAME)), c.getInt(c.getColumnIndex(CLASS_X)), c.getInt(c.getColumnIndex(CLASS_Y)), c.getInt(c.getColumnIndex(CLASS_A)), c.getFloat(c.getColumnIndex(CLASS_AWEIGHT))));
+                    }
+                    c.moveToNext();
+                }
+            }
+        }
+
+        return classes;
+    }
+
+    public void insertCache(String primary){
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        db.delete(TABLE_CACHE, CLASS_PRIMARY + " = '" + primary + "'", null);
+        Cursor c = db.rawQuery("SELECT * FROM " + TABLE_CLASS + " WHERE " + CLASS_PRIMARY + " = '" + primary + "'", null);
+        c.moveToFirst();
+
+        ContentValues values = new ContentValues();
+        if(!c.isNull(c.getColumnIndex(CLASS_B))){
+            values.put(CLASS_PRIMARY, c.getString(c.getColumnIndex(CLASS_PRIMARY)));
+            values.put(CLASS_NAME, c.getString(c.getColumnIndex(CLASS_NAME)));
+            values.put(CLASS_X, c.getInt(c.getColumnIndex(CLASS_X)));
+            values.put(CLASS_Y, c.getInt(c.getColumnIndex(CLASS_Y)));
+            values.put(CLASS_A, c.getInt(c.getColumnIndex(CLASS_A)));
+            values.put(CLASS_AWEIGHT, c.getFloat(c.getColumnIndex(CLASS_AWEIGHT)));
+            values.put(CLASS_B, c.getInt(c.getColumnIndex(CLASS_B)));
+            values.put(CLASS_BWEIGHT, c.getFloat(c.getColumnIndex(CLASS_BWEIGHT)));
+        }
+        else{
+            values.put(CLASS_PRIMARY, c.getString(c.getColumnIndex(CLASS_PRIMARY)));
+            values.put(CLASS_NAME, c.getString(c.getColumnIndex(CLASS_NAME)));
+            values.put(CLASS_X, c.getInt(c.getColumnIndex(CLASS_X)));
+            values.put(CLASS_Y, c.getInt(c.getColumnIndex(CLASS_Y)));
+            values.put(CLASS_A, c.getInt(c.getColumnIndex(CLASS_A)));
+            values.put(CLASS_AWEIGHT, c.getFloat(c.getColumnIndex(CLASS_AWEIGHT)));
+        }
+        db.insert(TABLE_CACHE, null, values);
+    }
+
+    public ArrayList<Classroom> getCache(){
+        ArrayList<Classroom> classes = new ArrayList<Classroom>();
+
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        Cursor c = db.rawQuery("SELECT * FROM " + TABLE_CACHE, null);
+        if(c.moveToFirst()){
+            while(!c.isAfterLast()){
+                if(!c.isNull(c.getColumnIndex(CLASS_B))){
+                    classes.add(new Classroom(c.getString(c.getColumnIndex(CLASS_PRIMARY)), c.getString(c.getColumnIndex(CLASS_NAME)), c.getInt(c.getColumnIndex(CLASS_X)), c.getInt(c.getColumnIndex(CLASS_Y)), c.getInt(c.getColumnIndex(CLASS_A)), c.getFloat(c.getColumnIndex(CLASS_AWEIGHT)), c.getInt(c.getColumnIndex(CLASS_B)), c.getFloat(c.getColumnIndex(CLASS_BWEIGHT))));
+                }
+                else{
+                    classes.add(new Classroom(c.getString(c.getColumnIndex(CLASS_PRIMARY)), c.getString(c.getColumnIndex(CLASS_NAME)), c.getInt(c.getColumnIndex(CLASS_X)), c.getInt(c.getColumnIndex(CLASS_Y)), c.getInt(c.getColumnIndex(CLASS_A)), c.getFloat(c.getColumnIndex(CLASS_AWEIGHT))));
+                }
+                c.moveToNext();
+            }
+        }
+
+        return classes;
+    }
+
+
+
 //
 //    public Building getBuilding(String text) {
 //        SQLiteDatabase db = this.getReadableDatabase();

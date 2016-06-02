@@ -10,6 +10,7 @@ public class MapEdge implements Parcelable {
     MapNode other;
     float weight;
 
+    @Deprecated
     public MapEdge(MapNode other, MapNode me){
         this.other = other;
         this.weight = (float) (4.01d * Math.sqrt(Math.pow(other.x - me.x, 2) + Math.pow(other.y - me.y, 2)));

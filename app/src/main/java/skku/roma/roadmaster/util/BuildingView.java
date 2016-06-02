@@ -23,15 +23,11 @@ import skku.roma.roadmaster.R;
  */
 public class BuildingView extends SubsamplingScaleImageView {
     int number;
-    private ArrayList<MapNode> path;
+    private Way way;
     private PointF current;
     private Bitmap departPin;
     private Bitmap destPin;
     private Bitmap Pin;
-
-    //Test
-    Map<Integer, MapNode> map;
-    ArrayList<MapEdgeData> edges;
 
     public BuildingView(Context context){
         this(context, null);
@@ -64,19 +60,11 @@ public class BuildingView extends SubsamplingScaleImageView {
 
     public void setPin(PointF current){
         this.current = current;
-        animateCenter(current).withDuration(1000).start();
         invalidate();
     }
 
-    public void setPath(ArrayList<MapNode> path){
-        this.path = path;
-        invalidate();
-    }
-
-    @Deprecated
-    public void setTest(MapGraph graph, ArrayList<MapEdgeData> edges){
-        map = graph.Graph;
-        this.edges = edges;
+    public void setWay(Way way) {
+        this.way = way;
         invalidate();
     }
 
@@ -101,28 +89,33 @@ public class BuildingView extends SubsamplingScaleImageView {
             canvas.drawBitmap(Pin, x, y, paint);
         }
 
-        if(path != null){
-            if(departPin != null && path.get(path.size() - 1).inBuilding == number){
-                PointF coord = sourceToViewCoord(path.get(path.size() - 1).x, path.get(path.size() - 1).y);
-                float x = coord.x - (departPin.getWidth() / 2);
-                float y = coord.y - departPin.getHeight();
-                canvas.drawBitmap(departPin, x, y, paint);
-            }
+        if(way != null){
+            ArrayList<MapNode> path = way.path;
+
+            Path line = new Path();
+            PointF start = null;
+            int index;
 
             if(destPin != null && path.get(0).inBuilding == number){
-                PointF coord = sourceToViewCoord(path.get(0).x, path.get(0).y);
+                PointF coord = sourceToViewCoord(way.dest.x, way.dest.y);
                 float x = coord.x - (destPin.getWidth() / 2);
                 float y = coord.y - destPin.getHeight();
                 canvas.drawBitmap(destPin, x, y, paint);
+
+                start = coord;
+                line.moveTo(start.x, start.y);
             }
 
-            Path line = new Path();
-            PointF start;
-            int index;
             for (index = 0;index < path.size(); index++){
                 if(path.get(index).inBuilding == number){
-                    start = sourceToViewCoord(path.get(index).x, path.get(index).y);
-                    line.moveTo(start.x, start.y);
+                    if(start == null) {
+                        start = sourceToViewCoord(path.get(index).x, path.get(index).y);
+                        line.moveTo(start.x, start.y);
+                    }
+                    else{
+                        start = sourceToViewCoord(path.get(index).x, path.get(index).y);
+                        line.lineTo(start.x, start.y);
+                    }
                     break;
                 }
             }
@@ -146,26 +139,16 @@ public class BuildingView extends SubsamplingScaleImageView {
                 }
             }
 
-            canvas.drawPath(line, paint);
-        }
+            if(departPin != null && path.get(path.size() - 1).inBuilding == number && way.depart != null){
+                PointF coord = sourceToViewCoord(way.depart.x, way.depart.y);
+                float x = coord.x - (departPin.getWidth() / 2);
+                float y = coord.y - departPin.getHeight();
+                canvas.drawBitmap(departPin, x, y, paint);
 
-        //TEST
-        //paint.setStrokeWidth(3);
-        if(map != null && edges != null){
-            for(MapEdgeData edgeData : edges){
-                MapNode a = map.get(edgeData.a);
-                MapNode b = map.get(edgeData.b);
-
-                if(a.inBuilding == number && b.inBuilding == number) {
-                    PointF start = sourceToViewCoord(a.x, a.y);
-                    PointF end = sourceToViewCoord(b.x, b.y);
-
-                    Path line = new Path();
-                    line.moveTo(start.x, start.y);
-                    line.lineTo(end.x, end.y);
-                    canvas.drawPath(line, paint);
-                }
+                line.lineTo(coord.x, coord.y);
             }
+
+            canvas.drawPath(line, paint);
         }
     }
 }

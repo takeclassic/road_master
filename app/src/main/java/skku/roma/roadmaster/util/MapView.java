@@ -24,7 +24,7 @@ import skku.roma.roadmaster.R;
  * Created by nyu531 on 2016-04-14.
  */
 public class MapView extends SubsamplingScaleImageView {
-    private ArrayList<MapNode> path;
+    private Way way;
     private PointF current;
     private Bitmap departPin;
     private Bitmap destPin;
@@ -32,10 +32,6 @@ public class MapView extends SubsamplingScaleImageView {
     private ArrayList<Building> buildings;
 
     private int textSize = 16;
-
-    //Test
-    Map<Integer, MapNode> map;
-    ArrayList<MapEdgeData> edges;
 
     public MapView(Context context){
         this(context, null);
@@ -77,15 +73,8 @@ public class MapView extends SubsamplingScaleImageView {
         invalidate();
     }
 
-    public void setPath(ArrayList<MapNode> path){
-        this.path = path;
-        invalidate();
-    }
-
-    @Deprecated
-    public void setTest(MapGraph graph, ArrayList<MapEdgeData> edges){
-        map = graph.Graph;
-        this.edges = edges;
+    public void setWay(Way way) {
+        this.way = way;
         invalidate();
     }
 
@@ -110,20 +99,17 @@ public class MapView extends SubsamplingScaleImageView {
             canvas.drawBitmap(Pin, x, y, paint);
         }
 
-        if(path != null){
-            if(departPin != null && path.get(path.size() - 1).inBuilding == 0){
-                PointF coord = sourceToViewCoord(path.get(path.size() - 1).x, path.get(path.size() - 1).y);
-                float x = coord.x - (departPin.getWidth() / 2);
-                float y = coord.y - departPin.getHeight();
-                canvas.drawBitmap(departPin, x, y, paint);
-            }
+        if(way != null){
+            ArrayList<MapNode> path = way.path;
 
+            /*
             if(destPin != null && path.get(0).inBuilding == 0){
                 PointF coord = sourceToViewCoord(path.get(0).x, path.get(0).y);
                 float x = coord.x - (destPin.getWidth() / 2);
                 float y = coord.y - destPin.getHeight();
                 canvas.drawBitmap(destPin, x, y, paint);
             }
+            */
 
             Path line = new Path();
             PointF start;
@@ -155,6 +141,15 @@ public class MapView extends SubsamplingScaleImageView {
                 }
             }
 
+            if(departPin != null && path.get(path.size() - 1).inBuilding == 0 && way.depart == null){
+                PointF coord = sourceToViewCoord(path.get(path.size() - 1).x, path.get(path.size() - 1).y);
+                float x = coord.x - (departPin.getWidth() / 2);
+                float y = coord.y - departPin.getHeight();
+                canvas.drawBitmap(departPin, x, y, paint);
+
+                line.lineTo(coord.x, coord.y);
+            }
+
             canvas.drawPath(line, paint);
         }
 
@@ -166,27 +161,7 @@ public class MapView extends SubsamplingScaleImageView {
         if(buildings != null){
             for(Building building : buildings){
                 PointF textPoint = sourceToViewCoord(building.x, building.y);
-                // canvas.drawPoint(textPoint.x, textPoint.y, paint);
                 canvas.drawText(building.text, textPoint.x - textPaint.measureText(building.text) / 2, textPoint.y + textSize / 2, textPaint);
-            }
-        }
-
-        //TEST
-        //paint.setStrokeWidth(3);
-        if(map != null && edges != null){
-            for(MapEdgeData edgeData : edges){
-                MapNode a = map.get(edgeData.a);
-                MapNode b = map.get(edgeData.b);
-
-                if(a.inBuilding == 0 && b.inBuilding == 0) {
-                    PointF start = sourceToViewCoord(a.x, a.y);
-                    PointF end = sourceToViewCoord(b.x, b.y);
-
-                    Path line = new Path();
-                    line.moveTo(start.x, start.y);
-                    line.lineTo(end.x, end.y);
-                    canvas.drawPath(line, paint);
-                }
             }
         }
     }

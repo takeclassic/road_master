@@ -1,6 +1,7 @@
 package skku.roma.roadmaster.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -71,9 +72,114 @@ public class MapGraph {
         for(Map.Entry<Integer, MapNode> elem : Graph.entrySet()){
             elem.getValue().sortEdge(compare);
         }
+
+
     }
 
-    public ArrayList<MapNode> FindTheWay(MapNode departure, MapNode destination){
+    public Way findWay(Classroom depart, Classroom dest){
+        if(depart.b == 0){
+            if(dest.b != 0){
+                Way waya = findWayWithNodes(Graph.get(depart.a), Graph.get(dest.a));
+                Way wayb = findWayWithNodes(Graph.get(depart.a), Graph.get(dest.b));
+
+                if(waya.getWeight() + depart.aweight + dest.aweight < wayb.getWeight() + depart.aweight + dest.bweight){
+                    waya.setDepart(depart);
+                    waya.setDest(dest);
+                    return waya;
+                }
+                else{
+                    wayb.setDepart(depart);
+                    wayb.setDest(dest);
+                    return wayb;
+                }
+            }
+            else{
+                Way way = findWayWithNodes(Graph.get(depart.a), Graph.get(dest.a));
+                way.setDepart(depart);
+                way.setDest(dest);
+                return way;
+            }
+        }
+        else {
+            if(dest.b != 0) {
+                Way waya = findWayWithNodes(Graph.get(depart.a), Graph.get(dest.a));
+                Way wayb = findWayWithNodes(Graph.get(depart.a), Graph.get(dest.b));
+                Way wayc = findWayWithNodes(Graph.get(depart.b), Graph.get(dest.a));
+                Way wayd = findWayWithNodes(Graph.get(depart.b), Graph.get(dest.b));
+
+                float aweight = waya.getWeight() + depart.aweight + dest.aweight;
+                float bweight = wayb.getWeight() + depart.aweight + dest.bweight;
+                float cweight = wayc.getWeight() + depart.bweight + dest.aweight;
+                float dweight = wayd.getWeight() + depart.bweight + dest.bweight;
+
+                float[] weights = {aweight, bweight, cweight, dweight};
+                Arrays.sort(weights);
+
+                if(weights[0] == aweight) {
+                    waya.setDest(dest);
+                    waya.setDepart(depart);
+                    return waya;
+                }
+                else if(weights[0] == bweight){
+                    wayb.setDest(dest);
+                    wayb.setDepart(depart);
+                    return wayb;
+                }
+                else if(weights[0] == cweight){
+                    wayc.setDest(dest);
+                    wayc.setDepart(depart);
+                    return wayc;
+                }
+                else if(weights[0] == dweight){
+                    wayd.setDest(dest);
+                    wayd.setDepart(depart);
+                    return wayd;
+                }
+            }
+            else {
+                Way waya = findWayWithNodes(Graph.get(depart.a), Graph.get(dest.a));
+                Way wayb = findWayWithNodes(Graph.get(depart.b), Graph.get(dest.a));
+
+                if(waya.getWeight() + depart.aweight + dest.aweight < wayb.getWeight() + depart.bweight + dest.aweight){
+                    waya.setDepart(depart);
+                    waya.setDest(dest);
+                    return waya;
+                }
+                else{
+                    wayb.setDepart(depart);
+                    wayb.setDest(dest);
+                    return wayb;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public Way findWay(MapNode depart, Classroom dest){
+        if(dest.b != 0){
+            Way waya = findWayWithNodes(depart, Graph.get(dest.a));
+            Way wayb = findWayWithNodes(depart, Graph.get(dest.b));
+
+            if(waya.getWeight() + dest.aweight < wayb.getWeight() + dest.bweight){
+                waya.setDest(dest);
+                return waya;
+            }
+            else{
+                wayb.setDest(dest);
+                return wayb;
+            }
+        }
+        else{
+            Way way = findWayWithNodes(depart, Graph.get(dest.a));
+            way.setDest(dest);
+            return way;
+        }
+    }
+
+    private Way findWayWithNodes(MapNode departure, MapNode destination){
+        Way way = new Way();
+
         for(Map.Entry<Integer, MapNode> elem : Graph.entrySet()){
             elem.getValue().weight = Float.MAX_VALUE;
             elem.getValue().pred = null;
@@ -97,7 +203,9 @@ public class MapGraph {
                     path.add(pred);
                     pred = pred.pred;
                 }
-                return path;
+                way.setPath(path);
+                way.setWeight(node.weight);
+                return way;
             }
 
             for(MapEdge edge : node.edgelist){
@@ -109,7 +217,7 @@ public class MapGraph {
             }
         }
 
-        return path;
+        return way;
     }
 
     public MapNode getNodeByLocation(int x, int y){
@@ -125,5 +233,9 @@ public class MapGraph {
         }
 
         return node;
+    }
+
+    public MapNode getNodeByClassroom(Classroom classroom){
+        return Graph.get(classroom.a);
     }
 }

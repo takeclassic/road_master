@@ -17,7 +17,7 @@ public class MapNode implements Parcelable {
     public int x;
     public int y;
     String name;
-    int inBuilding;
+    public int inBuilding;
     ArrayList<MapEdge> edgelist;
 
     // For Dijkstra

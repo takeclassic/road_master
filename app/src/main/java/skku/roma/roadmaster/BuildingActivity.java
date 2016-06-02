@@ -22,6 +22,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -37,6 +38,7 @@ import java.util.TimerTask;
 import skku.roma.roadmaster.util.BuildingView;
 import skku.roma.roadmaster.util.MapNode;
 import skku.roma.roadmaster.util.MapView;
+import skku.roma.roadmaster.util.Way;
 
 
 public class BuildingActivity extends ActionBarActivity {
@@ -44,13 +46,13 @@ public class BuildingActivity extends ActionBarActivity {
     BuildingView Map;
     String name;
     int number;
-    ArrayList<MapNode> path;
+    Way way;
 
     // ActionBar 관련 View
     private ActionBar actionBar;
     TextView nameText;
     Spinner nameSpinner;
-    ArrayList<Integer> maps;
+    int[] maps;
 
     //GPS
     LocationManager locationManager;
@@ -69,6 +71,8 @@ public class BuildingActivity extends ActionBarActivity {
     double currenty;
 
     public static int RESULT_GPS = 1;
+    public static int RESULT_SET_DEPART = 2;
+    public static int RESULT_SET_DEST = 3;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,29 +81,24 @@ public class BuildingActivity extends ActionBarActivity {
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
-        Intent data = getIntent();
+        final Intent data = getIntent();
         data.setExtrasClassLoader(getClass().getClassLoader());
         number = data.getIntExtra("number", 0);
         name = data.getStringExtra("name");
-        path = MainActivity.path;
+        way = MainActivity.way;
 
         if(number != 0) {
-            maps = new ArrayList<Integer>();
+            maps = new int[10];
             Resources resources = getResources();
 
             int bid;
-            int floornumber = 1;
-            while((bid = resources.getIdentifier("b" + number + floornumber, "drawable", getPackageName())) != 0){
-                floornumber++;
-                maps.add(bid);
+            for(int i = 0; i <= 9; i++){
+                maps[i] = resources.getIdentifier("b" + number + i, "drawable", getPackageName());
             }
 
-            if(!maps.isEmpty()){
-                Map = (BuildingView) findViewById(R.id.view_building);
-                Map.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_CROP);
-                Map.setImage(ImageSource.resource(maps.get(0)));
-                Map.setNumber(number * 10 + 1);
-            }
+            Map = (BuildingView) findViewById(R.id.view_building);
+            Map.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE);
+            Map.setWay(way);
         }
 
         //actionBar 관련 코드
@@ -115,10 +114,19 @@ public class BuildingActivity extends ActionBarActivity {
         nameText.setText(name);
 
         nameSpinner = (Spinner) customView.findViewById(R.id.actionbar2_spinner);
-        if(!maps.isEmpty()){
-            String item[] = new String[maps.size()];
-            for(int i = 0; i < maps.size(); i++){
-                item[i] = (i + 1) + "층";
+        if(!isMapEmpty()){
+            ArrayList<String> item = new ArrayList<String>();
+            if(maps[9] != 0){
+                item.add("B2층");
+            }
+            if(maps[0] != 0){
+                item.add("B1층");
+            }
+
+            for(int i = 1; i <= 8; i++){
+                if(maps[i] != 0){
+                    item.add(i + "층");
+                }
             }
 
             ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<String>(this, R.layout.custom_spinner_item, item);
@@ -127,8 +135,21 @@ public class BuildingActivity extends ActionBarActivity {
             nameSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                    Map.setImage(ImageSource.resource(maps.get(i)));
-                    Map.setNumber(number * 10 + i + 1);
+                    String select = (String) nameSpinner.getSelectedItem();
+                    if(select.equals("B2층")){
+                        Map.setImage(ImageSource.resource(maps[9]));
+                        Map.setNumber(number * 10 + i + 9);
+                    }
+                    else if(select.equals("B1층")){
+                        Map.setImage(ImageSource.resource(maps[0]));
+                        Map.setNumber(number * 10 + i);
+                    }
+                    for(int j = 1; j <= 8 ;j++){
+                        if(select.equals(j + "층")){
+                            Map.setImage(ImageSource.resource(maps[j]));
+                            Map.setNumber(number * 10 + j);
+                        }
+                    }
                 }
 
                 @Override
@@ -136,6 +157,55 @@ public class BuildingActivity extends ActionBarActivity {
 
                 }
             });
+
+            int floor = data.getIntExtra("floor", 0);
+            int spinnerposition =  spinnerAdapter.getPosition("1층");
+            if(floor != 0){
+                floor %= 10;
+                if(floor == 0){
+                    spinnerposition = spinnerAdapter.getPosition("B1층");
+                }
+                else if(floor == 9){
+                    spinnerposition = spinnerAdapter.getPosition("B2층");
+                }
+                else{
+                    spinnerposition = spinnerAdapter.getPosition(floor + "층");
+                }
+                if(data.getStringExtra("type").equals("search")) {
+                    Map.setPin(new PointF(data.getIntExtra("x", 0), data.getIntExtra("y", 0)));
+                    Map.setEnabled(false);
+                    nameSpinner.setEnabled(false);
+                    LinearLayout setButtons = (LinearLayout) findViewById(R.id.setButtons);
+                    setButtons.setVisibility(View.VISIBLE);
+                }
+                Map.setOnImageEventListener(new SubsamplingScaleImageView.OnImageEventListener() {
+                    @Override
+                    public void onReady() {
+                        Map.animateScaleAndCenter(Map.getMaxScale(), new PointF(data.getIntExtra("x", 0), data.getIntExtra("y", 0))).withDuration(1000).start();
+                    }
+
+                    @Override
+                    public void onImageLoaded() {
+
+                    }
+
+                    @Override
+                    public void onPreviewLoadError(Exception e) {
+
+                    }
+
+                    @Override
+                    public void onImageLoadError(Exception e) {
+
+                    }
+
+                    @Override
+                    public void onTileLoadError(Exception e) {
+
+                    }
+                });
+            }
+            nameSpinner.setSelection(spinnerposition);
         }
 
         actionBar.setCustomView(customView);
@@ -230,33 +300,34 @@ public class BuildingActivity extends ActionBarActivity {
             Intent intent = new Intent();
             intent.putExtra("x", currentx);
             intent.putExtra("y", currenty);
-            this.setResult(RESULT_GPS, intent);
+            setResult(RESULT_GPS, intent);
             finish();
         }
     }
 
+    boolean isMapEmpty(){
+        for(int map : maps){
+            if(map != 0){
+                return false;
+            }
+        }
 
-    /*
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_building, menu);
         return true;
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
+    public void onSetDepart(View view) {
+        Intent data = getIntent();
+        Intent intent = new Intent();
+        intent.putExtra("primary", data.getStringExtra("primary"));
+        setResult(RESULT_SET_DEPART, intent);
+        finish();
     }
-    */
+
+    public void onSetDest(View view) {
+        Intent data = getIntent();
+        Intent intent = new Intent();
+        intent.putExtra("primary", data.getStringExtra("primary"));
+        setResult(RESULT_SET_DEST, intent);
+        finish();
+    }
 }

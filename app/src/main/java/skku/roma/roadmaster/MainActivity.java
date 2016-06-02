@@ -40,10 +40,12 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import skku.roma.roadmaster.util.Building;
+import skku.roma.roadmaster.util.Classroom;
 import skku.roma.roadmaster.util.DB;
 import skku.roma.roadmaster.util.MapGraph;
 import skku.roma.roadmaster.util.MapNode;
 import skku.roma.roadmaster.util.MapView;
+import skku.roma.roadmaster.util.Way;
 
 /**
  * Created by nyu531 on 2016-04-11.
@@ -65,9 +67,12 @@ public class MainActivity extends ActionBarActivity {
     MapView Map;
     ArrayList<Building> buildings;
     MapGraph Graph;
+
+    int departType = 0;
     MapNode departNode;
-    MapNode destNode;
-    public static ArrayList<MapNode> path;
+    Classroom departClass;
+    Classroom destClass;
+    public static Way way;
 
     ImageButton PlusButton;
     ImageButton MinusButton;
@@ -84,6 +89,7 @@ public class MainActivity extends ActionBarActivity {
             if(!locationSuccess){
                 Toast.makeText(getApplicationContext(), "위치 정보 수신에 실패했습니다.", Toast.LENGTH_SHORT).show();
                 departText.setText("내위치: 찾을 수 없음");
+                departType = 0;
             }
         }
     };
@@ -96,6 +102,7 @@ public class MainActivity extends ActionBarActivity {
     private float BUILDINGX = 200;
     private float BUILDINGY = 100;
     private static int BUILDING = 1;
+    private static int SEARCH = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -226,7 +233,15 @@ public class MainActivity extends ActionBarActivity {
         departSearch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //TODO 검색 기능 구현
+                if(!departText.getText().toString().isEmpty()){
+                    Intent search = new Intent(MainActivity.this, SearchActivity.class);
+                    search.putExtra("type", "depart");
+                    search.putExtra("string", departText.getText().toString());
+                    startActivityForResult(search, SEARCH);
+                }
+                else{
+                    Toast.makeText(getApplicationContext(), "검색어를 입력해주세요", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
@@ -279,7 +294,15 @@ public class MainActivity extends ActionBarActivity {
         destSearch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //TODO 검색 기능 구현
+                if(!destText.getText().toString().isEmpty()) {
+                    Intent search = new Intent(MainActivity.this, SearchActivity.class);
+                    search.putExtra("type", "dest");
+                    search.putExtra("string", destText.getText().toString());
+                    startActivityForResult(search, SEARCH);
+                }
+                else{
+                    Toast.makeText(getApplicationContext(), "검색어를 입력해주세요", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
@@ -388,14 +411,51 @@ public class MainActivity extends ActionBarActivity {
     }
 
     public void onSearchClick(View view) {
-        //TODO 검색 기능 구현
-        Map.setTest(Graph, db.getEdges()); // TEST
+        Intent search = new Intent(MainActivity.this, SearchActivity.class);
+        search.putExtra("type", "search");
+        startActivityForResult(search, SEARCH);
+        //Map.setTest(Graph, db.getEdges()); // TEST
     }
 
     public void onFindWayClick(View view) {
-        //TODO 길찾기 기능 구현, 예시
-        path = Graph.FindTheWay(Graph.getNodeByLocation(720, 460), Graph.getNodeByLocation(1000, 550));
-        Map.setPath(path);
+        if(departType == 0){
+            Toast.makeText(this, "출발지를 입력해주세요", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if(destClass == null){
+            Toast.makeText(this, "도착지를 입력해주세요", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if(departType == 1){
+            way = Graph.findWay(departNode, destClass);
+            Map.animateScaleAndCenter(Map.getMaxScale(), new PointF(departNode.x, departNode.y)).withDuration(1000).start();
+        }
+        else if(departType == 2){
+            way = Graph.findWay(departClass, destClass);
+            Intent buildingActivity = new Intent(MainActivity.this, BuildingActivity.class);
+
+            MapNode classnode = Graph.getNodeByClassroom(departClass);
+            int number = classnode.inBuilding / 10;
+            buildingActivity.putExtra("number", number);
+
+            String name = null;
+            for(Building building : buildings){
+                if(building.number == number){
+                    name = building.text;
+                }
+            }
+            buildingActivity.putExtra("name", name);
+
+            buildingActivity.putExtra("floor", classnode.inBuilding);
+            buildingActivity.putExtra("x", departClass.x);
+            buildingActivity.putExtra("y", departClass.y);
+            buildingActivity.putExtra("type", "main");
+            startActivityForResult(buildingActivity, BUILDING);
+        }
+
+        Map.setWay(way);
     }
 
     private void zoom(float scale){
@@ -436,11 +496,12 @@ public class MainActivity extends ActionBarActivity {
 
         if(currentx <= 0 || 3366 <= currentx || currenty <= 0 || 3106 <= currenty){
             departNode = null;
+            departType = 0;
             departText.setText("내위치: 학교 내부가 아닙니다.");
         }
         else{
-            Log.d("ROMA", "currentx : " + (int) currentx + "currenty : " + (int) currenty);
             departNode = Graph.getNodeByLocation((int) currentx, (int) currenty);
+            departType = 1;
             departText.setText("내위치: " + departNode.getName());
             Map.setPin(new PointF((float) currentx, (float) currenty));
         }
@@ -454,6 +515,7 @@ public class MainActivity extends ActionBarActivity {
         else{
             departDelete.setVisibility(View.INVISIBLE);
             departDelete.setClickable(false);
+            departType = 0;
         }
     }
 
@@ -465,42 +527,72 @@ public class MainActivity extends ActionBarActivity {
         else{
             destDelete.setVisibility(View.INVISIBLE);
             destDelete.setClickable(false);
+            destClass = null;
         }
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
         if(requestCode == BUILDING && resultCode == BuildingActivity.RESULT_GPS){
             currentx = data.getDoubleExtra("x", currentx);
             currenty = data.getDoubleExtra("y", currenty);
             departNode = Graph.getNodeByLocation((int) currentx, (int) currenty);
+            departType = 1;
             departText.setText("내위치: " + departNode.getName());
             Map.setPin(new PointF((float) currentx, (float) currenty));
         }
-    }
 
-    /*
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+        if(requestCode == BUILDING && resultCode == BuildingActivity.RESULT_SET_DEPART){
+            String primary = data.getStringExtra("primary");
+            Classroom classroom = db.getClass(primary);
+            departText.setText(classroom.primary + " : " + classroom.name);
+            departClass = classroom;
+            departType = 2;
         }
 
-        return super.onOptionsItemSelected(item);
+        if(requestCode == BUILDING && resultCode == BuildingActivity.RESULT_SET_DEST){
+            String primary = data.getStringExtra("primary");
+            Classroom classroom = db.getClass(primary);
+            destText.setText(classroom.primary + " : " + classroom.name);
+            destClass = classroom;
+        }
+
+        if(requestCode == SEARCH && resultCode == SearchActivity.RESULT_SELECT){
+            String type = data.getStringExtra("type");
+            String primary = data.getStringExtra("primary");
+            Classroom classroom = db.getClass(primary);
+            if(type.equals("depart")){
+                departText.setText(classroom.primary + " : " + classroom.name);
+                departClass = classroom;
+                departType = 2;
+            }
+            else if(type.equals("dest")){
+                destText.setText(classroom.primary + " : " + classroom.name);
+                destClass = classroom;
+            }
+            else if(type.equals("search")){
+                Intent buildingActivity = new Intent(MainActivity.this, BuildingActivity.class);
+
+                MapNode classnode = Graph.getNodeByClassroom(classroom);
+                int number = classnode.inBuilding / 10;
+                buildingActivity.putExtra("number", number);
+
+                String name = null;
+                for(Building building : buildings){
+                    if(building.number == number){
+                        name = building.text;
+                    }
+                }
+                buildingActivity.putExtra("name", name);
+                buildingActivity.putExtra("floor", classnode.inBuilding);
+                buildingActivity.putExtra("x", classroom.x);
+                buildingActivity.putExtra("y", classroom.y);
+                buildingActivity.putExtra("type", "search");
+                buildingActivity.putExtra("primary", classroom.primary);
+                startActivityForResult(buildingActivity, BUILDING);
+            }
+        }
     }
-*/
 }

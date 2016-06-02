@@ -22,4 +22,42 @@
         android:padding="5dp"
         android:onClick="onGpsClick"/>
 
+    <LinearLayout
+        android:id="@+id/setButtons"
+        android:layout_alignParentBottom="true"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:orientation="horizontal"
+        android:padding="3dp"
+        android:visibility="gone">
+
+        <Button
+            android:layout_marginRight="3dp"
+            android:onClick="onSetDepart"
+            android:layout_alignParentBottom="true"
+            android:text="출발지로 설정"
+            android:textSize="15dp"
+            android:textColor="#FFFFFF"
+            android:gravity="center"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/round2" />
+
+        <Button
+            android:layout_marginLeft="3dp"
+            android:onClick="onSetDest"
+            android:layout_alignParentBottom="true"
+            android:text="도착지로 설정"
+            android:textSize="15dp"
+            android:textColor="#FFFFFF"
+            android:gravity="center"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/round2"/>
+
+    </LinearLayout>
+
+
 </RelativeLayout>
