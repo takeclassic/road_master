@@ -19,7 +19,7 @@ import java.util.List;
 
 public class DB extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "RoadMasterDB.db";
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 3;
 
     private static final String TABLE_BUILDING = "building";
     private static final String BUILDING_NUMBER="number";
@@ -65,9 +65,8 @@ public class DB extends SQLiteOpenHelper {
             " UNION ALL SELECT 32, 1789, 1096, '제2과학관'" +
             " UNION ALL SELECT 31, 1885, 1309, '제1과학관'" +
             " UNION ALL SELECT 85, 2065, 614, '산학협력관'" +
-            " UNION ALL SELECT 4, 988, 1536, '복지회관'" +
             " UNION ALL SELECT 3, 1336, 1486, '학생회관'" +
-            " UNION ALL SELECT 4, 1338, 1484, '복지회관'" +
+            " UNION ALL SELECT 4, 988, 1536, '복지회관'" +
             " UNION ALL SELECT 5, 808, 1844, '수성관'" +
             " UNION ALL SELECT 71, 1235, 2322, '의학관'" +
             " UNION ALL SELECT 53, 2440, 2449, '약학관'" +
@@ -116,61 +115,47 @@ public class DB extends SQLiteOpenHelper {
         this.context = context;
     }
 
-    private String INSERT_NODE_TABLE(){
-        String INSERT_NODE_TABLE = "INSERT INTO " + TABLE_NODE;
+    private void INSERT_NODE_TABLE(SQLiteDatabase db){
         try {
             InputStreamReader inputStreamReader = new InputStreamReader(context.getAssets().open("node.csv"), "euc-kr");
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
 
-            StringBuffer stringBuffer = new StringBuffer();
-            String line = bufferedReader.readLine();
-            String[] linearray = line.split(",");
-
-            INSERT_NODE_TABLE = stringBuffer.append(INSERT_NODE_TABLE).append(" SELECT ").append(linearray[0]).append(" AS ").append(NODE_PRIMARY).append(", ")
-                    .append(linearray[1]).append(" AS ").append(NODE_X).append(", ")
-                    .append(linearray[2]).append(" AS ").append(NODE_Y).append(", '")
-                    .append(linearray[3]).append("' AS ").append(NODE_NAME).append(", ")
-                    .append(linearray[4]).append(" AS ").append(NODE_INBUILDING)
-                    .toString();
+            String line;
 
             while((line = bufferedReader.readLine()) != null){
-                linearray = line.split(",");
-                INSERT_NODE_TABLE = stringBuffer.append(" UNION ALL SELECT ")
-                        .append(linearray[0]).append(", ").append(linearray[1]).append(", ").append(linearray[2]).append(", '").append(linearray[3]).append("', ").append(linearray[4]).toString();
+                String[] linearray = line.split(",");
+                ContentValues values = new ContentValues();
+                values.put(NODE_PRIMARY, linearray[0]);
+                values.put(NODE_X, linearray[1]);
+                values.put(NODE_Y, linearray[2]);
+                values.put(NODE_NAME, linearray[3]);
+                values.put(NODE_INBUILDING, linearray[4]);
+                db.insert(TABLE_NODE, null, values);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        return INSERT_NODE_TABLE;
     }
 
-    private String INSERT_EDGE_TABLE(){
-        String INSERT_EDGE_TABLE = "INSERT INTO " + TABLE_EDGE;
+    private void INSERT_EDGE_TABLE(SQLiteDatabase db){
         try {
             InputStreamReader inputStreamReader = new InputStreamReader(context.getAssets().open("edge.csv"));
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
 
-            StringBuffer stringBuffer = new StringBuffer();
-            String line = bufferedReader.readLine();
-            String[] linearray = line.split(",");
-
-            INSERT_EDGE_TABLE = stringBuffer.append(INSERT_EDGE_TABLE).append(" SELECT ").append(linearray[0]).append(" AS ").append(EDGE_PRIMARY).append(", ")
-                    .append(linearray[1]).append(" AS ").append(EDGE_A).append(", ")
-                    .append(linearray[2]).append(" AS ").append(EDGE_B).append(", ")
-                    .append(linearray[3]).append(" AS ").append(EDGE_WEIGHT)
-                    .toString();
+            String line;
 
             while((line = bufferedReader.readLine()) != null){
-                linearray = line.split(",");
-                INSERT_EDGE_TABLE = stringBuffer.append(" UNION ALL SELECT ")
-                        .append(linearray[0]).append(", ").append(linearray[1]).append(", ").append(linearray[2]).append(", ").append(linearray[3]).toString();
+                String[] linearray = line.split(",");
+                ContentValues values = new ContentValues();
+                values.put(EDGE_PRIMARY, linearray[0]);
+                values.put(EDGE_A, linearray[1]);
+                values.put(EDGE_B, linearray[2]);
+                values.put(EDGE_WEIGHT, linearray[3]);
+                db.insert(TABLE_EDGE, null, values);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        return INSERT_EDGE_TABLE;
     }
 
     private void INSERT_CLASS_TABLE(SQLiteDatabase db){
@@ -225,10 +210,10 @@ public class DB extends SQLiteOpenHelper {
         db.execSQL(INSERT_BUILDING_TABLE);
 
         db.execSQL(CREATE_NODE_TABLE);
-        db.execSQL(INSERT_NODE_TABLE());
+        INSERT_NODE_TABLE(db);
 
         db.execSQL(CREATE_EDGE_TABLE);
-        db.execSQL(INSERT_EDGE_TABLE());
+        INSERT_EDGE_TABLE(db);
 
         db.execSQL(CREATE_CLASS_TABLE);
         INSERT_CLASS_TABLE(db);
@@ -395,188 +380,6 @@ public class DB extends SQLiteOpenHelper {
 
         return classes;
     }
-
-
-
-//
-//    public Building getBuilding(String text) {
-//        SQLiteDatabase db = this.getReadableDatabase();
-//
-//        //건물명으로 정보 탐색
-//        String selectQuery = "SELECT  * FROM " + TABLE_BUILDING + " WHERE "
-//                + BUILDING_TEXT + " = " + text;
-//
-//        Cursor c = db.rawQuery(selectQuery, null);
-//        Building build=new Building();
-//
-//
-//        if (c != null)
-//            c.moveToFirst();
-//
-//        build.setX(c.getInt(c.getColumnIndex(BUILDING_X)));
-//        build.setY((c.getInt(c.getColumnIndex(BUILDING_Y))));
-//        build.setText(c.getString(c.getColumnIndex(BUILDING_TEXT)));
-//
-//        return build;
-//    }
-//
-//    /*PK로 튜플을 찾아 업데이트*/
-//    public int updateBuilding(Building build) {
-//        SQLiteDatabase db = this.getWritableDatabase();
-//
-//        ContentValues values = new ContentValues();
-//        values.put(BUILDING_X, build.getX());
-//        values.put(BUILDING_Y, build.getY());
-//        // updating row
-//        return db.update(TABLE_BUILDING, values, BUILDING_TEXT + " = " +build.getText(), null);
-//    }
-//
-//    /*혹시몰라서 넣어놨음*/
-//    public void deleteBuilding(String text) {
-//        SQLiteDatabase db = this.getWritableDatabase();
-//        db.delete(TABLE_BUILDING, BUILDING_TEXT + "= " + text, null);
-//    }
-//
-//    /*CRUDs relating MapEdge object*/
-//    //Insert 하기 전에 전제는 MapNode에 MapEdge가 1대 다의 관계라는 것
-//    public void insertMapEdge(MapEdge edge) {
-//        SQLiteDatabase db = this.getWritableDatabase();
-//
-//        ContentValues values = new ContentValues();
-//        values.put(MAPEDGE_WEIGHT, edge.getWeight());
-//        values.put(MAPEDGE_ID, edge.getId());
-//        /*edge가 속한 node의 x, y값을 받아 그대로 넣음*/
-//        values.put(MAPEDGE_NODE_X, edge.getNodeX());
-//        values.put(MAPEDGE_NODE_Y, edge.getNodeY());
-//        // insert row
-//        db.insert(TABLE_MAPEDGE, null, values);
-//    }
-////노드에 속한 엣지는 여러개일테니 arraylist를 리턴함
-//    public List<MapEdge> getAllMapEdge(int x, int y) {
-//        List<MapEdge> edges = new ArrayList<MapEdge>();
-//
-//        SQLiteDatabase db = this.getReadableDatabase();
-//
-//        //MapEdge와 MapNode의 x, y키를 비교해 같은걸 뽑음...쿼리가 이게 맞는건지 모르겠음
-//        String selectQuery = "SELECT * FROM "+ TABLE_MAPEDGE + " INNER JOIN " + TABLE_MAPNODE
-//                            + "ON edge." + x + "="  + "node." +x + " AND " + "edge." + y + "=" + "node." +y;
-//
-//        Cursor c = db.rawQuery(selectQuery, null);
-//
-//        //looping through all rows and adding to the list
-//        if (c.moveToFirst()) {
-//            do {
-//                MapEdge edge = new MapEdge();
-//                edge.setId(c.getInt(c.getColumnIndex(MAPEDGE_ID)));
-//                edge.setWeight((c.getInt(c.getColumnIndex(MAPEDGE_WEIGHT))));
-//                // adding to edges arraylist
-//                edges.add(edge);
-//            } while (c.moveToNext());
-//        }
-//        return edges;
-//    }
-//    /*PK로 튜플을 찾아 업데이트*/
-//    public int updateMapEdge(MapEdge edge) {
-//        SQLiteDatabase db = this.getWritableDatabase();
-//
-//        ContentValues values = new ContentValues();
-//        values.put(MAPEDGE_NODE_X, edge.getNodeX());
-//        values.put(MAPEDGE_NODE_Y, edge.getNodeY());
-//        values.put(MAPEDGE_WEIGHT, edge.getWeight());
-//        // updating row
-//        return db.update(TABLE_MAPEDGE, values, MAPEDGE_ID + " = " +edge.getId(), null);
-//    }
-//    public void deleteMapEdge(int id) {
-//        SQLiteDatabase db = this.getWritableDatabase();
-//        db.delete(TABLE_MAPEDGE, MAPEDGE_ID + "= " + id, null);
-//    }
-//
-//    /*CRUDs relating MapNode*/
-//    public void insertMapNode(MapNode node) {
-//        SQLiteDatabase db = this.getWritableDatabase();
-//
-//        ContentValues values = new ContentValues();
-//        values.put(MAPNODE_NAME, node.getName());
-//        values.put(MAPNODE_PRIMARY, node.getPrimary());
-//        values.put(MAPNODE_X, node.getX());
-//        values.put(MAPNODE_Y, node.getY());
-//        // insert row
-//        db.insert(TABLE_MAPNODE, null, values);
-//    }
-//    /*같은 x,y값을 갖는 노드는 하나밖에 없으니 튜플 하나만 리턴*/
-//    public MapNode getMapNode(int x, int y) {
-//
-//        SQLiteDatabase db = this.getReadableDatabase();
-//
-//        String selectQuery = "SELECT * FROM "+ TABLE_MAPNODE + "WHERE " +TABLE_MAPNODE +".x " + "=" + x + "AND"
-//                            + TABLE_MAPNODE +".y" + "=" + y;
-//
-//        Cursor c = db.rawQuery(selectQuery, null);
-//        MapNode node=new MapNode();
-//
-//
-//        if (c != null)
-//            c.moveToFirst();
-//
-//        node.setX(c.getInt(c.getColumnIndex(MAPNODE_X)));
-//        node.setY(c.getInt(c.getColumnIndex(MAPNODE_Y)));
-//        node.setName(c.getString(c.getColumnIndex(MAPNODE_NAME)));
-//        node.setPrimary(c.getInt(c.getColumnIndex(MAPNODE_PRIMARY)));
-//
-//        return node;
-//    }
-//    public int updateMapNode(MapNode node) {
-//        SQLiteDatabase db = this.getWritableDatabase();
-//
-//        ContentValues values = new ContentValues();
-//        values.put(MAPNODE_PRIMARY, node.getPrimary());
-//        values.put(MAPNODE_NAME, node.getName());
-//        // updating row
-//        return db.update(TABLE_MAPNODE, values, MAPNODE_X + " = " +node.getX() + " AND " + MAPNODE_Y + "=" +node.getY(), null);
-//    }
-//    public void deleteMapNode(int x, int y) {
-//        SQLiteDatabase db = this.getWritableDatabase();
-//        db.delete(TABLE_MAPNODE, MAPNODE_X + "= " + x + " AND " + MAPNODE_Y + "=" + y, null);
-//    }
-//
-//    /*CRUDs concerning classlist*/
-//    public void insertClassList(ClassList list) {
-//        SQLiteDatabase db = this.getWritableDatabase();
-//
-//        ContentValues values = new ContentValues();
-//        values.put(CLASSLIST_NUM, list.getNum());
-//        values.put(CLASSLIST_NODE_X, list.getNodeX());
-//        values.put(CLASSLIST_NODE_Y, list.getNodeY());
-//        // insert row
-//        db.insert(TABLE_MAPNODE, null, values);
-//    }
-//    /*MapNode에 속한 ClassList는 여러개일테니 여러 튜플을 다 리턴함*/
-//    public List<ClassList> getAllClassList(int x, int y) {
-//        SQLiteDatabase db = this.getReadableDatabase();
-//        List<ClassList> lists=new ArrayList<ClassList>();
-//        //역시 쿼리가 확실히 이건지 잘 모르겠음....ㅠㅠ
-//        String selectQuery = "SELECT * FROM "+ TABLE_CLASSLIST + " INNER JOIN " + TABLE_MAPNODE
-//                + "ON classlist." + x + "="  + "node." +x  + " AND " + "classlist." + y + "=" + "node." +"y";
-//
-//        Cursor c = db.rawQuery(selectQuery, null);
-//
-//        //looping through all rows and adding to the list
-//        if (c.moveToFirst()) {
-//            do {
-//                ClassList list = new ClassList();
-//                list.setNum(c.getInt(c.getColumnIndex(CLASSLIST_NUM)));
-//                // adding to edges arraylist
-//                lists.add(list);
-//            } while (c.moveToNext());
-//        }
-//        return lists;
-//
-//    }
-//    /*ClassList는 primary key만 갖고 있으므로 update 안함*/
-//    public void deleteClassList(int num) {
-//        SQLiteDatabase db = this.getWritableDatabase();
-//        db.delete(TABLE_CLASSLIST, CLASSLIST_NUM + "= " + num , null);
-//    }
 
     public void closeDB() {
         SQLiteDatabase db = this.getReadableDatabase();

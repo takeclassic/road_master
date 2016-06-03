@@ -74,6 +74,8 @@ public class BuildingActivity extends ActionBarActivity {
     public static int RESULT_SET_DEPART = 2;
     public static int RESULT_SET_DEST = 3;
 
+    boolean once = true;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -181,7 +183,10 @@ public class BuildingActivity extends ActionBarActivity {
                 Map.setOnImageEventListener(new SubsamplingScaleImageView.OnImageEventListener() {
                     @Override
                     public void onReady() {
-                        Map.animateScaleAndCenter(Map.getMaxScale(), new PointF(data.getIntExtra("x", 0), data.getIntExtra("y", 0))).withDuration(1000).start();
+                        if(once) {
+                            Map.animateScaleAndCenter(Map.getMaxScale(), new PointF(data.getIntExtra("x", 0), data.getIntExtra("y", 0))).withDuration(1000).start();
+                            once = false;
+                        }
                     }
 
                     @Override

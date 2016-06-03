@@ -32,24 +32,10 @@ public class MapGraph {
         }
 
         for(MapEdgeData edgeData : edges){
-            if(edgeData.weight != 0){
-                addEdge(edgeData.a, edgeData.b, edgeData.weight);
-            }
-            else{
-                addEdge(edgeData.a, edgeData.b);
-            }
+            addEdge(edgeData.a, edgeData.b, edgeData.weight);
         }
 
         // sortNode();
-    }
-
-    @Deprecated // 이를 Deprecated한 이유는 weight는 한번 계산하면 고정값이 되기에 그를 데이터베이스에 저장해두는 것이 좋기 때문입니다. weight는 전부 계산되어 데이터베이스에 저장해두어야 합니다.
-    public void addEdge(int a, int b){
-        MapNode node1 = Graph.get(a);
-        MapNode node2 = Graph.get(b);
-
-        node1.addEdge(node2);
-        node2.addEdge(node1);
     }
 
     public void addEdge(int a, int b, float weight){
@@ -72,8 +58,6 @@ public class MapGraph {
         for(Map.Entry<Integer, MapNode> elem : Graph.entrySet()){
             elem.getValue().sortEdge(compare);
         }
-
-
     }
 
     public Way findWay(Classroom depart, Classroom dest){
