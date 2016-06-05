@@ -9,4 +9,5 @@
     <string name="dummy_content">DUMMY\nCONTENT</string>
     <string name="title_activity_building">BuildingActivity</string>
     <string name="title_activity_search">SearchActivity</string>
+    <string name="title_activity_settings">설정</string>
 </resources>

@@ -1,15 +1,20 @@
 package skku.roma.roadmaster;
 
 import android.app.AlertDialog;
+import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.PointF;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
+import android.os.RemoteException;
+import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -34,8 +39,17 @@ import android.widget.Toast;
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 
+import org.altbeacon.beacon.Beacon;
+import org.altbeacon.beacon.BeaconConsumer;
+import org.altbeacon.beacon.BeaconManager;
+import org.altbeacon.beacon.BeaconParser;
+import org.altbeacon.beacon.RangeNotifier;
+import org.altbeacon.beacon.Region;
+
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -50,7 +64,7 @@ import skku.roma.roadmaster.util.Way;
 /**
  * Created by nyu531 on 2016-04-11.
  */
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends ActionBarActivity implements BeaconConsumer {
 
     private ProgressBar loading;
 
@@ -87,7 +101,7 @@ public class MainActivity extends ActionBarActivity {
         @Override
         public void handleMessage(Message msg) {
             if(!locationSuccess){
-                Toast.makeText(getApplicationContext(), "위치 정보 수신에 실패했습니다.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "GPS 정보 수신에 실패했습니다.", Toast.LENGTH_SHORT).show();
                 departText.setText("내위치: 찾을 수 없음");
                 departType = 0;
             }
@@ -99,10 +113,19 @@ public class MainActivity extends ActionBarActivity {
     //Database
     DB db;
 
+    //Beacon
+    private BeaconManager beaconManager;
+    private Region region;
+    boolean beaconSuccess;
+    Collection<Beacon> beacon;
+    Thread waitingBeacon;
+
+    //Building Click
     private float BUILDINGX = 200;
     private float BUILDINGY = 100;
     private static int BUILDING = 1;
     private static int SEARCH = 2;
+    private static int SETTING = 3;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,8 +134,14 @@ public class MainActivity extends ActionBarActivity {
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         db = new DB(this);
+        beaconManager = BeaconManager.getInstanceForApplication(this);
+        beaconManager.getBeaconParsers().add(new BeaconParser().
+                setBeaconLayout("m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24"));
+        region = new Region("ROMA", null, null, null);
+        beaconManager.bind(this);
 
         inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         loading = (ProgressBar) findViewById(R.id.loading);
         PlusButton = (ImageButton) findViewById(R.id.plusbutton);
@@ -122,7 +151,13 @@ public class MainActivity extends ActionBarActivity {
 
         Map = (MapView) findViewById(R.id.view_map);
         Map.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_CROP);
-        Map.setImage(ImageSource.resource(R.drawable.map));
+
+        if(sharedPreferences.getBoolean("pref_high_quality_map", false)){
+            Map.setImage(ImageSource.resource(R.drawable.maphigh));
+        }
+        else{
+            Map.setImage(ImageSource.resource(R.drawable.map));
+        }
 
         final GestureDetector gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
             @Override
@@ -154,7 +189,7 @@ public class MainActivity extends ActionBarActivity {
         Map.setOnImageEventListener(new SubsamplingScaleImageView.OnImageEventListener() {
             @Override
             public void onReady() {
-                Map.setMaxScale(1.5f);
+                Map.setMaxScale(Float.parseFloat(PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getString("pref_max_scale", "1.5")));
             }
 
             @Override
@@ -181,6 +216,7 @@ public class MainActivity extends ActionBarActivity {
 
         buildings = db.getBuildings();
         Map.setBuildings(buildings);
+        Map.setTextSize((Integer.parseInt(sharedPreferences.getString("pref_text_size", "16"))));
 
         startActivity(new Intent(this, SplashActivity.class)); // Map을 로드하고 로딩 액티비티 실행
 
@@ -348,58 +384,142 @@ public class MainActivity extends ActionBarActivity {
 
     public void onGpsClick(View view) {
         locationSuccess = false;
+        beaconSuccess = false;
 
-        if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-            pleaseTurnOnGps();
-            return;
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        final boolean useBeacon = sharedPreferences.getBoolean("pref_use_beacon", true);
+        if(useBeacon){
+            BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+            if(!bluetoothAdapter.isEnabled()){
+                bluetoothAdapter.enable();
+            }
+
+            try {
+                beaconManager.startRangingBeaconsInRegion(region);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
         }
 
-        final LocationListener locationListener = new LocationListener() {
+        waitingBeacon = new Thread(){
             @Override
-            public void onStatusChanged(String provider, int status, Bundle extras) {}
+            public void run() {
+                synchronized (this){
+                    try {
+                        wait(5000);
+                        if(beaconSuccess){
+                            MapNode node = Graph.getNodeByBeacon(beacon);
+                            if(node != null){
+                                Intent buildingActivity = new Intent(MainActivity.this, BuildingActivity.class);
+                                int number = node.inBuilding / 10;
+                                buildingActivity.putExtra("number", number);
 
-            @Override
-            public void onProviderEnabled(String provider) {}
-
-            @Override
-            public void onProviderDisabled(String provider) {}
-
-            @Override
-            public void onLocationChanged(Location location) {
-				if(location.getProvider().equals(LocationManager.NETWORK_PROVIDER)){
-					Log.d("ROMA", "위치를 네트워크로 구했습니다");
-				}
-
-                locationSuccess = true;
-                setPin(location.getLatitude(), location.getLongitude());
-                locationManager.removeUpdates(this);
+                                String name = null;
+                                for(Building building : buildings){
+                                    if(building.number == number){
+                                        name = building.text;
+                                    }
+                                }
+                                buildingActivity.putExtra("name", name);
+                                buildingActivity.putExtra("floor", node.inBuilding);
+                                buildingActivity.putExtra("x", node.x);
+                                buildingActivity.putExtra("y", node.y);
+                                buildingActivity.putExtra("type", "beacon");
+                                buildingActivity.putExtra("primary", node.primary);
+                                startActivityForResult(buildingActivity, BUILDING);
+                                locationSuccess = true;
+                            }
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         };
 
-        Location lastLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-
-        if(lastLocation != null && lastLocation.getTime() > Calendar.getInstance().getTimeInMillis() - 30000){ // 30초가 안 지났으면
-            setPin(lastLocation.getLatitude(), lastLocation.getLongitude());
-        }
-
-        lastLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-
-        if(lastLocation != null && lastLocation.getTime() > Calendar.getInstance().getTimeInMillis() - 30000){
-            setPin(lastLocation.getLatitude(), lastLocation.getLongitude());
-        }
-        else{
-            Toast.makeText(this, "위치 정보 수신에 시도합니다.", Toast.LENGTH_SHORT).show();
-            Timer timer = new Timer();
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
-            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
-            timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    locationManager.removeUpdates(locationListener);
-                    handler.sendEmptyMessage(0);
+        new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected void onPreExecute() {
+                super.onPreExecute();
+                if(useBeacon) {
+                    Toast.makeText(getApplicationContext(), "비콘 정보 수신에 시도합니다.", Toast.LENGTH_SHORT).show();
                 }
-            }, 20000);
-        }
+            }
+
+            @Override
+            protected Void doInBackground(Void... voids) {
+                if(useBeacon){
+                    waitingBeacon.start();
+                    try {
+                        waitingBeacon.join();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Void aVoid) {
+                super.onPostExecute(aVoid);
+
+                if(locationSuccess){
+                    return;
+                }
+
+                if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || !locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                    pleaseTurnOnGps();
+                    return;
+                }
+
+                final LocationListener locationListener = new LocationListener() {
+                    @Override
+                    public void onStatusChanged(String provider, int status, Bundle extras) {}
+
+                    @Override
+                    public void onProviderEnabled(String provider) {}
+
+                    @Override
+                    public void onProviderDisabled(String provider) {}
+
+                    @Override
+                    public void onLocationChanged(Location location) {
+                        if(location.getProvider().equals(LocationManager.NETWORK_PROVIDER)){
+                            Log.d("ROMA", "위치를 네트워크로 구했습니다");
+                        }
+
+                        locationSuccess = true;
+                        setPin(location.getLatitude(), location.getLongitude());
+                        locationManager.removeUpdates(this);
+                    }
+                };
+
+                Location lastLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+
+                if(lastLocation != null && lastLocation.getTime() > Calendar.getInstance().getTimeInMillis() - 30000){ // 30초가 안 지났으면
+                    setPin(lastLocation.getLatitude(), lastLocation.getLongitude());
+                }
+
+                lastLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+
+                if(lastLocation != null && lastLocation.getTime() > Calendar.getInstance().getTimeInMillis() - 30000){
+                    setPin(lastLocation.getLatitude(), lastLocation.getLongitude());
+                }
+                else{
+                    showToast("GPS 정보 수신에 시도합니다.");
+                    Timer timer = new Timer();
+                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
+                    timer.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            locationManager.removeUpdates(locationListener);
+                            handler.sendEmptyMessage(0);
+                        }
+                    }, 20000);
+                }
+            }
+        }.execute(new Void[] {});
     }
 
     public void onPlusClick(View view) {
@@ -428,9 +548,29 @@ public class MainActivity extends ActionBarActivity {
             return;
         }
 
-        if(departType == 1){
+        if(departType == 1 && departNode.inBuilding == 0){
             way = Graph.findWay(departNode, destClass);
             Map.animateScaleAndCenter(Map.getMaxScale(), new PointF(departNode.x, departNode.y)).withDuration(1000).start();
+        }
+        else if(departType == 1 && departNode.inBuilding != 0 ){
+            way = Graph.findWay(departNode, destClass);
+            Intent buildingActivity = new Intent(MainActivity.this, BuildingActivity.class);
+
+            int number = departNode.inBuilding / 10;
+            buildingActivity.putExtra("number", number);
+
+            String name = null;
+            for(Building building : buildings){
+                if(building.number == number){
+                    name = building.text;
+                }
+            }
+            buildingActivity.putExtra("name", name);
+            buildingActivity.putExtra("floor", departNode.inBuilding);
+            buildingActivity.putExtra("x", departNode.x);
+            buildingActivity.putExtra("y", departNode.y);
+            buildingActivity.putExtra("type", "main");
+            startActivityForResult(buildingActivity, BUILDING);
         }
         else if(departType == 2){
             way = Graph.findWay(departClass, destClass);
@@ -534,7 +674,7 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
+        /*
         if(requestCode == BUILDING && resultCode == BuildingActivity.RESULT_GPS){
             currentx = data.getDoubleExtra("x", currentx);
             currenty = data.getDoubleExtra("y", currenty);
@@ -543,6 +683,7 @@ public class MainActivity extends ActionBarActivity {
             departText.setText("내위치: " + departNode.getName());
             Map.setPin(new PointF((float) currentx, (float) currenty));
         }
+        */
 
         if(requestCode == BUILDING && resultCode == BuildingActivity.RESULT_SET_DEPART){
             String primary = data.getStringExtra("primary");
@@ -557,6 +698,13 @@ public class MainActivity extends ActionBarActivity {
             Classroom classroom = db.getClass(primary);
             destText.setText(classroom.primary + " : " + classroom.name);
             destClass = classroom;
+        }
+
+        if(requestCode == BUILDING && resultCode == BuildingActivity.RESULT_SET_BEACON){
+            int primary = data.getIntExtra("primary", 0);
+            departNode = Graph.getNodeByPrimary(primary);
+            departType = 1;
+            departText.setText("내위치: " + departNode.getName());
         }
 
         if(requestCode == SEARCH && resultCode == SearchActivity.RESULT_SELECT){
@@ -594,5 +742,60 @@ public class MainActivity extends ActionBarActivity {
                 startActivityForResult(buildingActivity, BUILDING);
             }
         }
+
+        if(requestCode == SETTING){
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+            Map.setTextSize((Integer.parseInt(sharedPreferences.getString("pref_text_size", "16"))));
+            Map.setMaxScale(Float.parseFloat(sharedPreferences.getString("pref_max_scale", "1.5")));
+
+            if(sharedPreferences.getBoolean("pref_high_quality_map", false)){
+                Map.setImage(ImageSource.resource(R.drawable.maphigh));
+            }
+            else{
+                Map.setImage(ImageSource.resource(R.drawable.map));
+            }
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        beaconManager.unbind(this);
+    }
+
+    @Override
+    public void onBeaconServiceConnect() {
+        beaconManager.setRangeNotifier(new RangeNotifier() {
+            @Override
+            public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
+                if(beacons.size() > 0){
+                    beaconSuccess = true;
+                    beacon = beacons;
+                    try {
+                        beaconManager.stopRangingBeaconsInRegion(region);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+                    synchronized (waitingBeacon){
+                        waitingBeacon.notifyAll();
+                    }
+                }
+            }
+        });
+    }
+
+    public void showToast(final String toast)
+    {
+        runOnUiThread(new Runnable() {
+            public void run()
+            {
+                Toast.makeText(getApplicationContext(), toast, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    public void onSettingClick(View view) {
+        Intent intent = new Intent(this, SettingsActivity.class);
+        startActivityForResult(intent, SETTING);
     }
 }

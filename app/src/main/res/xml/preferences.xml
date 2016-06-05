@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <CheckBoxPreference
+        android:key="pref_high_quality_map"
+        android:title="고화질 맵 사용"
+        android:summary="고화질 파일을 사용합니다 (고사양 요구)"
+        android:defaultValue="false" />
+
+    <CheckBoxPreference
+        android:key="pref_use_beacon"
+        android:title="위치 탐색에 비콘 사용"
+        android:summary="위치를 탐색할 때 실내 비콘을 탐색합니다"
+        android:defaultValue="true" />
+
+    <ListPreference
+        android:key="pref_text_size"
+        android:title="텍스트 사이즈"
+        android:summary="맵 빌딩 텍스트 사이즈를 설정합니다"
+        android:entries="@array/text_size_entries"
+        android:entryValues="@array/text_size_values"
+        android:defaultValue="16"/>
+
+    <ListPreference
+        android:key="pref_max_scale"
+        android:title="맵 최대 확대율"
+        android:summary="맵을 최대로 확대할 수 있는 정도를 설정합니다"
+        android:entries="@array/scale_size_entries"
+        android:entryValues="@array/scale_size_values"
+        android:defaultValue="1.5"/>
+
+</PreferenceScreen>

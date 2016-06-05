@@ -1,9 +1,15 @@
 package skku.roma.roadmaster.util;
 
+import android.util.Log;
+
+import org.altbeacon.beacon.Beacon;
+
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Stack;
@@ -12,7 +18,7 @@ import java.util.Stack;
  * Created by nyu531 on 2016-04-13.
  */
 public class MapGraph {
-    Map<Integer, MapNode> Graph;
+    private Map<Integer, MapNode> Graph;
     DB db;
 
     public MapGraph(DB db) {
@@ -34,8 +40,6 @@ public class MapGraph {
         for(MapEdgeData edgeData : edges){
             addEdge(edgeData.a, edgeData.b, edgeData.weight);
         }
-
-        // sortNode();
     }
 
     public void addEdge(int a, int b, float weight){
@@ -44,20 +48,6 @@ public class MapGraph {
 
         node1.addEdge(node2, weight);
         node2.addEdge(node1, weight);
-    }
-
-    @Deprecated
-    public void sortNode(){
-        Comparator<MapEdge> compare = new Comparator<MapEdge>() {
-            @Override
-            public int compare(MapEdge mapEdge, MapEdge mapEdge2) {
-                return mapEdge.weight < mapEdge2.weight ? -1 : mapEdge.weight > mapEdge2.weight ? 1 : 0;
-            }
-        };
-
-        for(Map.Entry<Integer, MapNode> elem : Graph.entrySet()){
-            elem.getValue().sortEdge(compare);
-        }
     }
 
     public Way findWay(Classroom depart, Classroom dest){
@@ -210,7 +200,7 @@ public class MapGraph {
         MapNode node = null;
         for(Map.Entry<Integer, MapNode> elem : Graph.entrySet()){
             difference = Math.pow(elem.getValue().x - x, 2) + Math.pow(elem.getValue().y - y, 2);
-            if(difference < min){
+            if(difference < min && elem.getValue().inBuilding == 0){
                 min = difference;
                 node = elem.getValue();
             }
@@ -221,5 +211,36 @@ public class MapGraph {
 
     public MapNode getNodeByClassroom(Classroom classroom){
         return Graph.get(classroom.a);
+    }
+
+    public MapNode getNodeByBeacon(Collection<Beacon> beacons){
+        MapNode node = null;
+        double min = Double.MAX_VALUE;
+        Iterator<Beacon> iterator = beacons.iterator();
+        Beacon minBeacon = null;
+
+        while(iterator.hasNext()){
+            Beacon beacon = iterator.next();
+            double distance = beacon.getDistance();
+            if(distance < min){
+                min = distance;
+                minBeacon = beacon;
+            }
+        }
+
+        Log.d("ROMA", minBeacon.getBluetoothName());
+
+        if(minBeacon.getBluetoothName().equals("MiniBeacon_37618")){
+            node = Graph.get(5043);
+        }
+        else if(minBeacon.getBluetoothName().equals("MiniBeacon_01497")){
+            node = Graph.get(5044);
+        }
+
+        return node;
+    }
+
+    public MapNode getNodeByPrimary(int primary){
+        return Graph.get(primary);
     }
 }

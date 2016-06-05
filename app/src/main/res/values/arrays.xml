@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="text_size_entries">
+        <item>16 pt</item>
+        <item>18 pt</item>
+        <item>20 pt</item>
+        <item>22 pt</item>
+        <item>24 pt</item>
+    </string-array>
+
+    <string-array name="text_size_values">
+        <item>16</item>
+        <item>18</item>
+        <item>20</item>
+        <item>22</item>
+        <item>24</item>
+    </string-array>
+
+    <string-array name="scale_size_entries">
+        <item>1.25배</item>
+        <item>1.5배</item>
+        <item>2배</item>
+        <item>2.25배</item>
+        <item>2.5배</item>
+    </string-array>
+
+    <string-array name="scale_size_values">
+        <item>1.25</item>
+        <item>1.5</item>
+        <item>2.0</item>
+        <item>2.25</item>
+        <item>2.5</item>
+    </string-array>
+</resources>

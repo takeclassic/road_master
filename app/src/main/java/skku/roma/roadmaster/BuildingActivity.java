@@ -22,6 +22,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -54,6 +55,7 @@ public class BuildingActivity extends ActionBarActivity {
     Spinner nameSpinner;
     int[] maps;
 
+    /*
     //GPS
     LocationManager locationManager;
     boolean locationSuccess;
@@ -71,8 +73,10 @@ public class BuildingActivity extends ActionBarActivity {
     double currenty;
 
     public static int RESULT_GPS = 1;
+    */
     public static int RESULT_SET_DEPART = 2;
     public static int RESULT_SET_DEST = 3;
+    public static int RESULT_SET_BEACON = 4;
 
     boolean once = true;
 
@@ -81,7 +85,7 @@ public class BuildingActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_building);
 
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        // locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
         final Intent data = getIntent();
         data.setExtrasClassLoader(getClass().getClassLoader());
@@ -173,13 +177,20 @@ public class BuildingActivity extends ActionBarActivity {
                 else{
                     spinnerposition = spinnerAdapter.getPosition(floor + "층");
                 }
-                if(data.getStringExtra("type").equals("search")) {
+
+                if(data.getStringExtra("type").equals("search")){
                     Map.setPin(new PointF(data.getIntExtra("x", 0), data.getIntExtra("y", 0)));
-                    Map.setEnabled(false);
                     nameSpinner.setEnabled(false);
                     LinearLayout setButtons = (LinearLayout) findViewById(R.id.setButtons);
                     setButtons.setVisibility(View.VISIBLE);
                 }
+                else if(data.getStringExtra("type").equals("beacon")){
+                    Map.setPin(new PointF(data.getIntExtra("x", 0), data.getIntExtra("y", 0)));
+                    nameSpinner.setEnabled(false);
+                    Button setButton = (Button) findViewById(R.id.setButton);
+                    setButton.setVisibility(View.VISIBLE);
+                }
+
                 Map.setOnImageEventListener(new SubsamplingScaleImageView.OnImageEventListener() {
                     @Override
                     public void onReady() {
@@ -219,6 +230,7 @@ public class BuildingActivity extends ActionBarActivity {
         toolbar.setPadding(0, 0, 0, 0);
     }
 
+    /*
     public void onGpsClick(View view) {
         locationSuccess = false;
 
@@ -309,6 +321,7 @@ public class BuildingActivity extends ActionBarActivity {
             finish();
         }
     }
+    */
 
     boolean isMapEmpty(){
         for(int map : maps){
@@ -333,6 +346,14 @@ public class BuildingActivity extends ActionBarActivity {
         Intent intent = new Intent();
         intent.putExtra("primary", data.getStringExtra("primary"));
         setResult(RESULT_SET_DEST, intent);
+        finish();
+    }
+
+    public void onSetBeacon(View view) {
+        Intent data = getIntent();
+        Intent intent = new Intent();
+        intent.putExtra("primary", data.getIntExtra("primary", 0));
+        setResult(RESULT_SET_BEACON, intent);
         finish();
     }
 }

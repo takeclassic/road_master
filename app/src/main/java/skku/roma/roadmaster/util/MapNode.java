@@ -13,7 +13,7 @@ import java.util.Map;
  * Created by nyu531 on 2016-04-13.
  */
 public class MapNode implements Parcelable {
-    int primary;
+    public int primary;
     public int x;
     public int y;
     String name;

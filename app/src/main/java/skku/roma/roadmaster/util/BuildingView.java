@@ -147,6 +147,14 @@ public class BuildingView extends SubsamplingScaleImageView {
 
                 line.lineTo(coord.x, coord.y);
             }
+            else if(departPin != null && path.get(path.size() - 1).inBuilding == number && way.depart == null){
+                PointF coord = sourceToViewCoord(path.get(path.size() - 1).x, path.get(path.size() - 1).y);
+                float x = coord.x - (departPin.getWidth() / 2);
+                float y = coord.y - departPin.getHeight();
+                canvas.drawBitmap(departPin, x, y, paint);
+
+                line.lineTo(coord.x, coord.y);
+            }
 
             canvas.drawPath(line, paint);
         }

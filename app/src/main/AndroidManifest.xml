@@ -3,6 +3,8 @@
     package="skku.roma.roadmaster" >
 
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
 
     <application
         android:allowBackup="true"
@@ -32,6 +34,10 @@
             android:name=".SearchActivity"
             android:label="@string/title_activity_search"
             android:theme="@style/AppTheme3" >
+        </activity>
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/title_activity_settings" >
         </activity>
     </application>
 
