@@ -19,7 +19,7 @@ import java.util.List;
 
 public class DB extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "RoadMasterDB.db";
-    private static final int DATABASE_VERSION = 3;
+    private static final int DATABASE_VERSION = 2;
 
     private static final String TABLE_BUILDING = "building";
     private static final String BUILDING_NUMBER="number";
@@ -57,10 +57,10 @@ public class DB extends SQLiteOpenHelper {
             + ")";
 
     private static final String INSERT_BUILDING_TABLE = "INSERT INTO " + TABLE_BUILDING +
-            " SELECT 21 AS " + BUILDING_NUMBER + ", 2447 AS " + BUILDING_X + ", 1552 AS " + BUILDING_Y + ", '제1공학관' AS " + BUILDING_TEXT +
+            " SELECT 22 AS " + BUILDING_NUMBER + ", 2447 AS " + BUILDING_X + ", 1552 AS " + BUILDING_Y + ", '제1공학관' AS " + BUILDING_TEXT +
             " UNION ALL SELECT 25, 2534, 1023, '제2공학관'" +
             " UNION ALL SELECT 61, 1482, 686, '생명공학관'" +
-            " UNION ALL SELECT 62, 1719, 587, '생명공학대학'" +
+            //" UNION ALL SELECT 62, 1719, 587, '생명공학대학'" +
             " UNION ALL SELECT 51, 1626, 883, '기초학문관'" +
             " UNION ALL SELECT 32, 1789, 1096, '제2과학관'" +
             " UNION ALL SELECT 31, 1885, 1309, '제1과학관'" +
@@ -69,20 +69,20 @@ public class DB extends SQLiteOpenHelper {
             " UNION ALL SELECT 4, 988, 1536, '복지회관'" +
             " UNION ALL SELECT 5, 808, 1844, '수성관'" +
             " UNION ALL SELECT 71, 1235, 2322, '의학관'" +
-            " UNION ALL SELECT 53, 2440, 2449, '약학관'" +
-            " UNION ALL SELECT 33, 2593, 2614, '화학관'" +
-            " UNION ALL SELECT 40, 2889, 2528, '반도체관'" +
+            " UNION ALL SELECT 530, 2440, 2449, '약학관'" +
+            " UNION ALL SELECT 330, 2593, 2614, '화학관'" +
+            " UNION ALL SELECT 400, 2889, 2528, '반도체관'" +
             " UNION ALL SELECT 81, 3017, 2287, '제1종합연구동'" +
             " UNION ALL SELECT 83, 3121, 1831, '제2종합연구동'" +
             " UNION ALL SELECT 86, 2108, 2465, 'N센터'" +
-            " UNION ALL SELECT 24, 2850, 1800, '공학실습동'" + //0
-            " UNION ALL SELECT 20, 2957, 1423, '공학실습동'" + //0
+            " UNION ALL SELECT 24, 2850, 1800, '공학실습동'" +
+            " UNION ALL SELECT 20, 2957, 1423, '공학실습동'" +
             " UNION ALL SELECT 0, 2943, 1174, '파워플랜트'" +
             " UNION ALL SELECT 0, 2943, 1014, '생명공학실습동'" +
             " UNION ALL SELECT 0, 2039, 368, '예관'" +
             " UNION ALL SELECT 0, 1684, 196, '의관'" +
             " UNION ALL SELECT 0, 1461, 209, '인관'" +
-            " UNION ALL SELECT 0, 1825, 1532, '삼성학술정보관'" +
+            " UNION ALL SELECT 480, 1825, 1532, '삼성학술정보관'" +
             " UNION ALL SELECT 0, 918, 2245, '대강당'" +
             " UNION ALL SELECT 0, 265, 2202, '체육관'" +
             " UNION ALL SELECT 0, 918, 2245, '대강당'" +
